@@ -2,67 +2,58 @@ import Link from "next/link";
 import { ExtratoAnotado } from "@/components/ExtratoAnotado";
 import { Marca } from "@/components/Marca";
 import { Rodape } from "@/components/Rodape";
-import { MARCA, PRECO_REAIS } from "@/lib/config";
-import { brlCentavos } from "@/lib/formato";
+import { MARCA } from "@/lib/config";
 
-const preco = brlCentavos(PRECO_REAIS);
+/*
+ * A página inicial fala só do diagnóstico gratuito. O plano pago é
+ * apresentado depois, na tela do resultado, quando a pessoa já recebeu o
+ * diagnóstico.
+ */
 
-const PERSONALIZADO = [
-  "A leitura da sua situação, com os seus números",
-  "A fila: em que ordem atacar cada dívida, e por quê",
-  "O que fazer com cada dívida e a mensagem pronta para enviar ao credor",
-  "A previsão de quitação no ritmo de hoje e seguindo o plano",
-  "Onde cortar no seu orçamento, grupo por grupo",
-  "Seus primeiros 7 dias e o plano de 30 dias, semana a semana",
+const NUMEROS = [
+  "Quanto você deve no total",
+  "Quanto vira juros por mês, dívida por dívida",
+  "Que parte da sua renda as parcelas levam",
+  "Quanto sobra ou falta no fim do mês",
 ];
 
-const GUIA_FIXO = [
-  "Os sete passos para sair do vermelho",
-  "Como negociar: regras, canais e seis mensagens prontas",
-  "Seus direitos em português claro",
-  "Dez armadilhas e golpes que afundam mais",
-  "O orçamento dos três potes",
-  "Checklist do mês, ajuda gratuita e glossário",
+const LEITURA = [
+  "O nível da sua situação, de atenção a emergência",
+  "Se as dívidas acabam no ritmo de hoje, e em quanto tempo",
+  "O que mais pesa no seu caso",
+  "Por onde começar",
 ];
 
 const PERGUNTAS: { pergunta: string; resposta: string }[] = [
   {
-    pergunta: "Preciso pagar para fazer o diagnóstico?",
-    resposta: `Não. Você responde às perguntas e vê o diagnóstico de graça: total das dívidas, quanto da renda está comprometida, juros estimados por mês e o nível da sua situação. Só o plano completo é pago, e você decide depois de ver o diagnóstico.`,
-  },
-  {
-    pergunta: "Vocês negociam minhas dívidas por mim?",
+    pergunta: "O diagnóstico é gratuito mesmo?",
     resposta:
-      "Não. O plano mostra a ordem, o que pedir e o que dizer a cada credor, com as mensagens prontas. Quem negocia é você, pelos canais oficiais, sem intermediário.",
+      "Sim. Você responde às perguntas e vê o resultado na tela, sem cadastro, sem e-mail e sem informar cartão.",
   },
   {
     pergunta: "Que dados vocês pedem?",
     resposta:
-      "Valores: renda, gastos do mês e quanto você deve em cada dívida. Não pedimos CPF, senha, número de cartão nem nome de banco. As respostas ficam guardadas no seu aparelho e são enviadas ao nosso sistema apenas para gerar o plano.",
+      "Valores: renda, gastos do mês e quanto você deve em cada dívida. Não pedimos CPF, senha, número de cartão nem nome de banco. O diagnóstico é calculado no seu próprio aparelho, e as respostas ficam guardadas só nele.",
   },
   {
-    pergunta: "Quem escreve o plano?",
+    pergunta: "Como os juros são calculados?",
     resposta:
-      "As contas (totais, juros, ordem das dívidas e prazos) são feitas por um sistema de cálculo com regras fixas. O texto é escrito por inteligência artificial em cima desses números, para falar do seu caso e não de finanças em geral. O guia que acompanha o plano foi escrito por gente e é igual para todos.",
+      "Se você souber os juros de uma dívida, usamos o seu número. Se não souber, usamos a taxa típica daquele tipo de dívida no Brasil. Por isso os valores de juros são estimativas, não o número exato do seu contrato.",
   },
   {
-    pergunta: "Como recebo o plano?",
+    pergunta: "Vocês negociam minhas dívidas por mim?",
     resposta:
-      "Na tela, logo depois do pagamento, em cerca de um minuto. Você pode salvar em PDF ou imprimir. Ele também fica guardado no navegador em que você respondeu.",
+      "Não. O diagnóstico mostra onde você está e por onde começar. Quem negocia é você, pelos canais oficiais de cada credor, sem intermediário.",
   },
   {
     pergunta: "Serve para quem está sem renda ou com o nome negativado?",
     resposta:
-      "Sim. Nesses casos o plano muda de foco: proteger o essencial, renegociar tudo em conjunto e mostrar os caminhos gratuitos que a lei oferece, como a repactuação para superendividados.",
-  },
-  {
-    pergunta: "E se eu não gostar?",
-    resposta: `Você tem ${MARCA.garantiaDias} dias para pedir o dinheiro de volta. Escreva para ${MARCA.contatoEmail} e devolvemos o valor integral.`,
+      "Sim. O diagnóstico leva isso em conta e muda a recomendação de por onde começar.",
   },
   {
     pergunta: "Isso é consultoria financeira?",
     resposta:
-      "Não. É um material educativo, com estimativas feitas a partir do que você informa. Para questões jurídicas, o plano indica onde buscar atendimento gratuito, como Procon e Defensoria Pública.",
+      "Não. É um material educativo, com estimativas feitas a partir do que você informa. Para questões jurídicas, procure atendimento gratuito no Procon ou na Defensoria Pública.",
   },
 ];
 
@@ -80,20 +71,17 @@ export default function PaginaInicial() {
         <section className="pagina abertura">
           <div className="abertura__texto">
             <h1 className="titulo-1">
-              Descubra em que ordem pagar suas dívidas e em quanto tempo elas acabam.
+              Descubra quanto suas dívidas custam por mês e por onde começar a sair delas.
             </h1>
             <p className="destaque coluna">
-              Você responde a algumas perguntas sobre renda, gastos e o que deve. O {MARCA.nome} calcula
-              seu diagnóstico na hora e monta um plano de quitação escrito para o seu caso.
+              Responda a algumas perguntas sobre renda, gastos e o que você deve. O {MARCA.nome} faz as
+              contas e mostra seu diagnóstico na hora, de graça.
             </p>
             <div className="abertura__acao">
               <Link href="/diagnostico" className="botao">
-                Fazer meu diagnóstico
+                Fazer meu diagnóstico gratuito
               </Link>
-              <p className="pequeno apoio">
-                O diagnóstico é gratuito e leva uns 3 minutos. O plano completo custa {preco}, em
-                pagamento único.
-              </p>
+              <p className="pequeno apoio">Leva uns 3 minutos. Sem cadastro, sem CPF e sem cartão.</p>
             </div>
           </div>
           <ExtratoAnotado />
@@ -108,51 +96,46 @@ export default function PaginaInicial() {
               <li className="etapa">
                 <h3 className="titulo-3">Você responde</h3>
                 <p className="apoio">
-                  Renda, gastos do mês e cada dívida que tem hoje. Não pedimos CPF, senha nem nome de
-                  banco.
+                  Renda, gastos do mês e cada dívida que tem hoje. Valores aproximados já servem.
                 </p>
               </li>
               <li className="etapa">
-                <h3 className="titulo-3">Vê o diagnóstico na hora</h3>
+                <h3 className="titulo-3">O {MARCA.nome} faz as contas</h3>
                 <p className="apoio">
-                  Quanto você deve no total, quanto da renda está comprometida, quanto vira juros por
-                  mês e o nível da sua situação. De graça.
+                  Soma tudo, estima os juros de cada dívida e compara com o que entra e sai do seu mês.
                 </p>
               </li>
               <li className="etapa">
-                <h3 className="titulo-3">Libera o plano completo</h3>
+                <h3 className="titulo-3">Você vê o diagnóstico</h3>
                 <p className="apoio">
-                  Por {preco}, a inteligência artificial escreve o plano para o seu caso: a fila das
-                  dívidas, o que dizer a cada credor e o que fazer semana a semana.
+                  Na mesma hora, na tela. Não precisa informar e-mail nem telefone para ver o resultado.
                 </p>
               </li>
             </ol>
           </div>
         </section>
 
-        <section className="secao" id="o-que-vem">
+        <section className="secao" id="o-que-mostra">
           <div className="pagina">
             <div className="secao__cabeca">
-              <h2 className="titulo-2">O que vem no plano</h2>
+              <h2 className="titulo-2">O que o diagnóstico mostra</h2>
               <p className="destaque apoio">
-                Duas partes: uma escrita só para você e um guia que acompanha todo plano.
+                Os números que quase ninguém tem na ponta do lápis, e o que eles querem dizer.
               </p>
             </div>
             <div className="sumario">
               <div className="sumario__grupo">
-                <h3 className="titulo-3">Feito para o seu caso</h3>
-                <p className="apoio">Muda de pessoa para pessoa, porque parte das suas respostas.</p>
+                <h3 className="titulo-3">Seus números</h3>
                 <ul className="sumario__lista">
-                  {PERSONALIZADO.map((item) => (
+                  {NUMEROS.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
               </div>
               <div className="sumario__grupo">
-                <h3 className="titulo-3">Guia que acompanha todo plano</h3>
-                <p className="apoio">O método e as regras do jogo, para consultar quando precisar.</p>
+                <h3 className="titulo-3">A leitura do seu caso</h3>
                 <ul className="sumario__lista">
-                  {GUIA_FIXO.map((item) => (
+                  {LEITURA.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
@@ -171,54 +154,24 @@ export default function PaginaInicial() {
                 <h3 className="titulo-3">É para você se</h3>
                 <ul className="lista-marcada lista-marcada--sim">
                   <li>Deve no cartão, no cheque especial, em empréstimo, em loja ou tem contas atrasadas.</li>
-                  <li>Não sabe por onde começar, nem quanto falta para acabar.</li>
-                  <li>Quer negociar, mas não sabe o que pedir nem o que dizer.</li>
-                  <li>Já tentou se organizar e o plano não durou um mês.</li>
+                  <li>Não sabe ao certo quanto deve, nem quanto paga de juros.</li>
+                  <li>Não sabe por onde começar.</li>
+                  <li>Evita abrir as faturas porque o número assusta.</li>
                 </ul>
               </div>
               <div className="pilha">
                 <h3 className="titulo-3">Não é para você se</h3>
                 <ul className="lista-marcada lista-marcada--nao">
                   <li>Procura dicas de investimento. O assunto aqui é dívida.</li>
-                  <li>As dívidas são de uma empresa. O plano é para pessoa física.</li>
-                  <li>Quer alguém que negocie no seu lugar. O plano mostra como, e quem negocia é você.</li>
+                  <li>As dívidas são de uma empresa. O diagnóstico é para pessoa física.</li>
+                  <li>Quer alguém que negocie no seu lugar. O diagnóstico mostra o caminho, e quem negocia é você.</li>
                 </ul>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="secao" id="preco">
-          <div className="pagina">
-            <div className="secao__cabeca">
-              <h2 className="titulo-2">Quanto custa</h2>
-              <p className="destaque apoio">
-                Você só paga depois de ver seu diagnóstico, se quiser o plano completo.
-              </p>
-            </div>
-            <div className="canhoto">
-              <div className="canhoto__corpo">
-                <h3 className="titulo-3">Plano completo</h3>
-                <ul className="lista-pontos">
-                  <li>Parte personalizada, escrita para o seu caso</li>
-                  <li>Guia com método, mensagens prontas e direitos</li>
-                  <li>Liberado na hora, para ler na tela ou salvar em PDF</li>
-                  <li>Pagamento único por Pix ou cartão, sem assinatura</li>
-                  <li>{MARCA.garantiaDias} dias para pedir o dinheiro de volta</li>
-                </ul>
-              </div>
-              <div className="canhoto__valor">
-                <p className="canhoto__preco">{preco}</p>
-                <Link href="/diagnostico" className="botao botao--largo">
-                  Fazer meu diagnóstico
-                </Link>
-                <p className="pequeno apoio">O diagnóstico é gratuito.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="secao secao--pautada" id="duvidas">
+        <section className="secao" id="duvidas">
           <div className="pagina">
             <div className="secao__cabeca">
               <h2 className="titulo-2">Dúvidas comuns</h2>
@@ -231,6 +184,21 @@ export default function PaginaInicial() {
                 </details>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="secao secao--pautada">
+          <div className="pagina">
+            <div className="secao__cabeca">
+              <h2 className="titulo-2">Três minutos para saber onde você está</h2>
+              <p className="destaque apoio">
+                Dívida que a gente não olha parece maior do que é. Ou menor. O diagnóstico mostra o
+                tamanho certo.
+              </p>
+            </div>
+            <Link href="/diagnostico" className="botao">
+              Fazer meu diagnóstico gratuito
+            </Link>
           </div>
         </section>
       </main>

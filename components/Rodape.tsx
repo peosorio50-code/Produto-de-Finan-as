@@ -9,7 +9,7 @@ export function Rodape() {
           <p className="titulo-3">{MARCA.nome}</p>
           <nav className="rodape__links pequeno" aria-label="Rodapé">
             <Link href="/privacidade">Privacidade e termos</Link>
-            <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a>
+            {MARCA.contatoEmail && <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a>}
           </nav>
         </div>
         <p className="pequeno">

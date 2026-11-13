@@ -1,10 +1,12 @@
 # Fôlego
 
-Diagnóstico de dívidas e plano de quitação personalizado, vendido por R$ 29,90.
+Diagnóstico gratuito de dívidas, com um plano de quitação personalizado
+(R$ 29,90) oferecido depois que a pessoa recebe o diagnóstico.
 
-A pessoa chega pela página de vendas, responde a 7 passos de perguntas, vê um
-diagnóstico gratuito e, se quiser, paga para liberar o plano completo. O plano
-tem duas partes:
+A página inicial fala só do diagnóstico gratuito. A pessoa responde a 7 passos
+de perguntas e recebe o diagnóstico completo: números, juros de cada dívida, o
+que mais pesa e por onde começar. Só então, no fim do resultado, conhece o
+plano pago. O plano tem duas partes:
 
 - **Parte personalizada**: os números são calculados por regras fixas
   (`lib/diagnostico.ts`) e o texto é escrito por IA (Claude) em cima deles.
@@ -13,9 +15,14 @@ tem duas partes:
 
 ```
 /  →  /diagnostico  →  /resultado  →  checkout  →  /plano
-vendas   perguntas     diagnóstico     Mercado      plano completo
-                       grátis          Pago         (tela, PDF)
+início   perguntas     diagnóstico     Mercado      plano completo
+(grátis)               grátis + oferta Pago         (tela, PDF)
 ```
+
+**Venda em espera.** Enquanto não houver meio de pagamento configurado
+(`MERCADOPAGO_ACCESS_TOKEN` vazio e sem `PAGAMENTO_MODO=teste`), o resultado
+mostra a oferta do plano como "Em breve", sem preço nem botão. O diagnóstico
+gratuito funciona normalmente e não depende de nenhuma chave.
 
 ## Rodar no computador
 
@@ -54,18 +61,20 @@ npm run typecheck
 | `MERCADOPAGO_ACCESS_TOKEN` | Access Token de produção do Mercado Pago. Com ele o site cobra de verdade. |
 | `PAGAMENTO_MODO` | `teste` simula o pagamento. Só vale quando não há token do Mercado Pago. |
 | `SITE_URL` | Opcional. Endereço público do site, usado na volta do pagamento. |
-| `NEXT_PUBLIC_CONTATO_EMAIL` | E-mail de atendimento mostrado no site (garantia, rodapé, privacidade). |
+| `NEXT_PUBLIC_CONTATO_EMAIL` | E-mail de atendimento mostrado no site (garantia, rodapé, privacidade). Vazio = o site não mostra e-mail. |
 
 Nome do produto, preço e dias de garantia ficam em `lib/config.ts`.
 
 ## Publicar (Vercel)
 
 1. Importe este repositório na Vercel (framework: Next.js, sem ajustes).
-2. Em *Settings → Environment Variables*, cadastre `ANTHROPIC_API_KEY`,
-   `MERCADOPAGO_ACCESS_TOKEN` e `NEXT_PUBLIC_CONTATO_EMAIL`.
+2. Para o diagnóstico gratuito, nenhuma variável é obrigatória. Cadastre
+   `NEXT_PUBLIC_CONTATO_EMAIL` quando tiver o e-mail de atendimento.
+3. Para abrir a venda do plano, cadastre `ANTHROPIC_API_KEY` e
+   `MERCADOPAGO_ACCESS_TOKEN` em *Settings → Environment Variables*, publique
+   de novo e faça uma compra real de ponta a ponta antes de divulgar.
    **Não** cadastre `PAGAMENTO_MODO=teste` em produção: com ele o plano fica
    liberado sem cobrança.
-3. Publique e faça uma compra real de ponta a ponta antes de divulgar.
 
 A geração do plano pode levar mais de um minuto. A rota `/api/plano` pede até
 300 segundos de execução, o que exige o Fluid Compute ativado no projeto (é o
@@ -119,7 +128,8 @@ padrão em projetos novos da Vercel).
 | Quero mudar | Arquivo |
 | --- | --- |
 | Nome, preço, garantia | `lib/config.ts` |
-| Textos da página de vendas | `app/page.tsx` |
+| Textos da página inicial | `app/page.tsx` |
+| Tela do diagnóstico gratuito e oferta do plano | `components/Resultado.tsx` |
 | Perguntas do questionário | `components/Questionario.tsx`, `lib/rotulos.ts` |
 | Regras de cálculo e taxas | `lib/diagnostico.ts` |
 | Instruções dadas à IA | `lib/ia.ts` |

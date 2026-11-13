@@ -115,8 +115,13 @@ export function TelaPlano() {
         <h1 className="titulo-2">Não encontramos seu pedido neste aparelho</h1>
         <p className="apoio">
           O plano fica guardado no navegador em que você respondeu às perguntas. Abra esta página nele.
-          Se você pagou e não consegue acessar, escreva para{" "}
-          <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a> e resolvemos.
+          {MARCA.contatoEmail && (
+            <>
+              {" "}
+              Se você pagou e não consegue acessar, escreva para{" "}
+              <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a> e resolvemos.
+            </>
+          )}
         </p>
         <Link href="/diagnostico" className="botao botao--contorno">
           Fazer um novo diagnóstico
@@ -160,8 +165,13 @@ export function TelaPlano() {
       <div className="espera">
         <h1 className="titulo-2">Não deu para montar o plano agora</h1>
         <p className="apoio">
-          Seu pagamento e suas respostas estão guardados. Tente de novo em instantes. Se continuar,
-          escreva para <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a>.
+          Seu pagamento e suas respostas estão guardados. Tente de novo em instantes.
+          {MARCA.contatoEmail && (
+            <>
+              {" "}
+              Se continuar, escreva para <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a>.
+            </>
+          )}
         </p>
         <button type="button" className="botao" onClick={() => void buscar()}>
           Tentar de novo

@@ -4,14 +4,15 @@
  */
 export const MARCA = {
   nome: "Fôlego",
-  slogan: "Diagnóstico das suas dívidas e plano para sair do vermelho",
+  slogan: "Diagnóstico gratuito das suas dívidas",
   descricao:
-    "Responda algumas perguntas e receba um diagnóstico das suas dívidas e um plano de quitação feito com os seus números.",
+    "Responda a algumas perguntas e veja, de graça, quanto suas dívidas custam por mês e por onde começar a sair delas.",
   /** Preço em centavos. 2990 = R$ 29,90. */
   precoCentavos: 2990,
   /** Nome que aparece na fatura do cartão do comprador (até 13 letras, sem acento). */
   nomeNaFatura: "FOLEGO",
-  contatoEmail: process.env.NEXT_PUBLIC_CONTATO_EMAIL || "contato@seudominio.com.br",
+  /** Vazio enquanto não houver e-mail definido: o site esconde os links de contato. */
+  contatoEmail: process.env.NEXT_PUBLIC_CONTATO_EMAIL || "",
   garantiaDias: 7,
 } as const;
 

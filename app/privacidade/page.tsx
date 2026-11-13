@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Marca } from "@/components/Marca";
 import { Rodape } from "@/components/Rodape";
-import { MARCA, PRECO_REAIS } from "@/lib/config";
-import { brlCentavos } from "@/lib/formato";
+import { MARCA } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Privacidade e termos",
@@ -33,10 +32,11 @@ export default function PaginaPrivacidade() {
           <h2 className="titulo-3">Onde suas respostas ficam</h2>
           <p>
             No seu aparelho, no armazenamento do navegador. O diagnóstico gratuito é calculado ali
-            mesmo. Quando você libera o plano completo, as respostas são enviadas ao nosso sistema e a
-            um serviço de inteligência artificial (Claude, da Anthropic) apenas para gerar o texto do
-            plano. Não mantemos banco de dados com suas respostas nem com o plano gerado, e não
-            vendemos nem compartilhamos essas informações para publicidade.
+            mesmo, sem enviar suas respostas para nós. Se você decidir comprar o plano completo, as
+            respostas são enviadas ao nosso sistema e a um serviço de inteligência artificial (Claude,
+            da Anthropic) apenas para gerar o texto do plano. Não mantemos banco de dados com suas
+            respostas nem com o plano gerado, e não vendemos nem compartilhamos essas informações para
+            publicidade.
           </p>
           <p>
             Para apagar tudo, limpe os dados de navegação deste site nas configurações do seu
@@ -47,27 +47,32 @@ export default function PaginaPrivacidade() {
         <section className="bloco">
           <h2 className="titulo-3">Pagamento</h2>
           <p>
-            O pagamento de {brlCentavos(PRECO_REAIS)} é único e processado pelo Mercado Pago. Não temos
-            acesso aos dados do seu cartão. O Mercado Pago trata seus dados de pagamento conforme a
-            política de privacidade dele.
+            O diagnóstico é gratuito. O plano completo é opcional e pago uma única vez, sem
+            assinatura. O pagamento é processado por uma empresa de pagamentos, que trata seus dados
+            conforme a política de privacidade dela. Não temos acesso aos dados do seu cartão.
           </p>
         </section>
 
         <section className="bloco">
           <h2 className="titulo-3">Garantia e devolução</h2>
           <p>
-            Você tem {MARCA.garantiaDias} dias, a contar da compra, para pedir a devolução integral do
-            valor, sem precisar explicar o motivo. Escreva para{" "}
-            <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a> pelo mesmo e-mail usado
-            no pagamento.
+            Quem compra o plano completo tem {MARCA.garantiaDias} dias, a contar da compra, para pedir
+            a devolução integral do valor, sem precisar explicar o motivo.
+            {MARCA.contatoEmail && (
+              <>
+                {" "}
+                Escreva para <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a> pelo mesmo
+                e-mail usado no pagamento.
+              </>
+            )}
           </p>
         </section>
 
         <section className="bloco">
           <h2 className="titulo-3">O que o {MARCA.nome} é, e o que não é</h2>
           <p>
-            É um material educativo: um diagnóstico e um plano de organização feitos a partir das
-            informações que você fornece. Os prazos e valores são estimativas, calculadas com taxas de
+            É um material educativo: um diagnóstico gratuito e, para quem quiser, um plano de
+            organização, feitos a partir das informações que você fornece. Os prazos e valores são estimativas, calculadas com taxas de
             juros típicas quando você não informa as suas, e não garantem resultado.
           </p>
           <p>
@@ -83,8 +88,14 @@ export default function PaginaPrivacidade() {
           <p>
             Pela Lei Geral de Proteção de Dados, você pode pedir informações sobre o tratamento dos
             seus dados ou a exclusão deles. Como não guardamos suas respostas, o que temos se resume
-            aos registros de pagamento. Para qualquer pedido, escreva para{" "}
-            <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a>.
+            aos registros de pagamento.
+            {MARCA.contatoEmail && (
+              <>
+                {" "}
+                Para qualquer pedido, escreva para{" "}
+                <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a>.
+              </>
+            )}
           </p>
         </section>
       </main>

@@ -7,11 +7,13 @@ import { EscalaNivel, FRASE_NIVEL, LinhasDiagnostico } from "@/components/Resumo
 import { gravarPedido, lerPedido, lerPlano, lerRespostas } from "@/lib/armazenamento";
 import { MARCA, PRECO_REAIS } from "@/lib/config";
 import { diagnosticar } from "@/lib/diagnostico";
-import { brlCentavos } from "@/lib/formato";
+import { brl, brlCentavos } from "@/lib/formato";
+import { leituraGratuita } from "@/lib/narrativa-padrao";
+import { ROTULOS_ACAO } from "@/lib/rotulos";
 import type { Respostas } from "@/lib/tipos";
 
 const ERROS: Record<string, string> = {
-  pagamento_nao_configurado: "O pagamento ainda não está disponível neste site. Tente de novo mais tarde.",
+  pagamento_nao_configurado: "O plano completo ainda não está à venda. Tente de novo em alguns dias.",
   respostas_invalidas: "Alguma resposta ficou incompleta. Revise o questionário e tente de novo.",
   falha_no_pagamento: "Não conseguimos abrir o pagamento agora. Tente de novo em alguns minutos.",
 };
@@ -27,7 +29,12 @@ function Cadeado() {
   );
 }
 
-export function Resultado() {
+/**
+ * Tela do diagnóstico gratuito. Entrega o diagnóstico inteiro primeiro; o
+ * plano pago só aparece no fim, depois que a pessoa já recebeu o resultado.
+ * `vendaAberta` é falso enquanto o pagamento não está configurado.
+ */
+export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
   const parametros = useSearchParams();
   const [respostas, setRespostas] = useState<Respostas | null | undefined>(undefined);
   const [planoPronto, setPlanoPronto] = useState<string | null>(null);
@@ -41,6 +48,7 @@ export function Resultado() {
   }, []);
 
   const d = useMemo(() => (respostas ? diagnosticar(respostas) : null), [respostas]);
+  const leitura = useMemo(() => (respostas && d ? leituraGratuita(respostas, d) : null), [respostas, d]);
 
   async function liberarPlano() {
     setEnviando(true);
@@ -69,19 +77,20 @@ export function Resultado() {
 
   if (respostas === undefined) return null;
 
-  if (!respostas || !d) {
+  if (!respostas || !d || !leitura) {
     return (
       <div className="espera">
         <h1 className="titulo-2">Seu diagnóstico ainda não foi feito neste aparelho</h1>
         <p className="apoio">Responda às perguntas para ver o resultado. Leva uns 3 minutos.</p>
         <Link href="/diagnostico" className="botao">
-          Fazer meu diagnóstico
+          Fazer meu diagnóstico gratuito
         </Link>
       </div>
     );
   }
 
-  const preco = brlCentavos(PRECO_REAIS);
+  const porCusto = [...d.dividas].sort((a, b) => b.jurosEstimadosMes - a.jurosEstimadosMes);
+  const passo = leitura.primeiroPasso;
 
   return (
     <>
@@ -105,25 +114,90 @@ export function Resultado() {
       )}
 
       <section className="bloco">
-        <h2 className="titulo-3">Seus números</h2>
+        <h2 className="titulo-2">Seus números</h2>
         <LinhasDiagnostico d={d} />
         <p className="pequeno apoio">
           <Link href="/diagnostico">Corrigir minhas respostas</Link>
         </p>
       </section>
 
+      <section className="bloco">
+        <h2 className="titulo-2">Quanto cada dívida custa por mês</h2>
+        <div className="tabela-rolagem">
+          <table className="tabela">
+            <thead>
+              <tr>
+                <th scope="col">Dívida</th>
+                <th scope="col">Você deve</th>
+                <th scope="col">Juros por mês</th>
+              </tr>
+            </thead>
+            <tbody>
+              {porCusto.map((divida) => (
+                <tr key={divida.id}>
+                  <td>{divida.rotulo}</td>
+                  <td>{brl(divida.saldo)}</td>
+                  <td className="negativo">{brl(divida.jurosEstimadosMes)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total</td>
+                <td>{brl(d.totalDividas)}</td>
+                <td className="negativo">{brl(d.jurosEstimadosMes)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p className="pequeno apoio">
+          Os juros são estimativas: usamos a taxa que você informou ou, quando não informou, a taxa
+          típica daquele tipo de dívida.
+        </p>
+      </section>
+
+      <section className="bloco">
+        <h2 className="titulo-2">O que mais pesa no seu caso</h2>
+        <dl className="topicos">
+          {leitura.pontosCriticos.map((ponto) => (
+            <div key={ponto.titulo}>
+              <dt>{ponto.titulo}</dt>
+              <dd>{ponto.explicacao}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {passo && (
+        <section className="bloco">
+          <h2 className="titulo-2">Por onde começar</h2>
+          <div className="cenario cenario--plano">
+            <p className="pequeno apoio">Sua primeira dívida a resolver</p>
+            <p className="cenario__prazo">{passo.divida.rotulo}</p>
+            <p>
+              <span className="etiqueta">{ROTULOS_ACAO[passo.divida.acao]}</span>
+            </p>
+            <p>{passo.oQueFazer}</p>
+          </div>
+        </section>
+      )}
+
       <section className="bloco bloco--final">
-        <h2 className="titulo-2">O plano completo responde o que falta</h2>
+        <h2 className="titulo-2">Quer o caminho inteiro?</h2>
+        <p className="destaque apoio">
+          Seu diagnóstico termina aqui, e é seu. Para quem quer ir além, existe o plano completo, que
+          transforma esses números em um passo a passo.
+        </p>
         <ul className="trancado">
           {[
             d.quantidadeDividas > 1
-              ? `Em que ordem atacar as suas ${d.quantidadeDividas} dívidas, e por quê`
-              : "Qual é o melhor caminho para a sua dívida, e por quê",
-            "O que pedir a cada credor, com a mensagem pronta para enviar",
-            "Em quanto tempo dá para quitar tudo seguindo o plano",
-            "Onde cortar no seu orçamento e quanto destinar às dívidas por mês",
+              ? `A ordem das suas ${d.quantidadeDividas} dívidas e o que fazer com cada uma`
+              : "O que fazer com a sua dívida, do primeiro contato à quitação",
+            "A mensagem pronta para enviar a cada credor",
+            "Em quanto tempo dá para quitar tudo, e quanto destinar por mês",
+            "Onde cortar no seu orçamento, grupo por grupo",
             "O que fazer nos primeiros 7 dias e nas 4 semanas seguintes",
-            "O guia completo: método, direitos, armadilhas e ajuda gratuita",
+            "Um guia com método, direitos, armadilhas e ajuda gratuita",
           ].map((item) => (
             <li key={item}>
               <Cadeado />
@@ -136,18 +210,33 @@ export function Resultado() {
           <div className="canhoto__corpo">
             <h3 className="titulo-3">Plano completo de {respostas.nome}</h3>
             <p className="apoio">
-              Escrito por inteligência artificial com os números que você acabou de informar, mais o guia
-              que acompanha todo plano. Fica pronto em cerca de um minuto depois do pagamento.
+              Escrito por inteligência artificial com os números que você acabou de informar, mais um
+              guia que acompanha todo plano.
             </p>
-            <p className="pequeno apoio">
-              Pagamento único por Pix ou cartão. {MARCA.garantiaDias} dias para pedir o dinheiro de volta.
-            </p>
+            {vendaAberta && (
+              <p className="pequeno apoio">
+                Fica pronto em cerca de um minuto depois do pagamento. Pagamento único por Pix ou cartão.{" "}
+                {MARCA.garantiaDias} dias para pedir o dinheiro de volta.
+              </p>
+            )}
           </div>
           <div className="canhoto__valor">
-            <p className="canhoto__preco">{preco}</p>
-            <button type="button" className="botao botao--largo" onClick={liberarPlano} disabled={enviando}>
-              {enviando ? "Abrindo o pagamento" : "Liberar meu plano"}
-            </button>
+            {vendaAberta ? (
+              <>
+                <p className="canhoto__preco">{brlCentavos(PRECO_REAIS)}</p>
+                <button type="button" className="botao botao--largo" onClick={liberarPlano} disabled={enviando}>
+                  {enviando ? "Abrindo o pagamento" : "Liberar meu plano"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="titulo-3">Em breve</p>
+                <p className="pequeno apoio">
+                  O plano completo ainda não está à venda. Seu diagnóstico continua guardado neste
+                  aparelho.
+                </p>
+              </>
+            )}
           </div>
         </div>
 

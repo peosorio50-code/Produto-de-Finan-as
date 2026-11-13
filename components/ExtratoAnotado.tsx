@@ -1,36 +1,28 @@
 import type { CSSProperties } from "react";
 import { diagnosticar } from "@/lib/diagnostico";
 import { EXEMPLO } from "@/lib/exemplo";
-import { brl, duracao } from "@/lib/formato";
-import type { AcaoDivida } from "@/lib/tipos";
-
-const NOTA: Record<AcaoDivida, string> = {
-  regularizar_ja: "regularizar já",
-  negociar_desconto: "pedir desconto à vista",
-  negociar_parcelamento: "refazer as parcelas",
-  trocar_por_barata: "trocar por juros menores",
-  atacar: "antecipar com a sobra",
-  manter_em_dia: "só manter em dia",
-  combinar: "combinar um valor fixo",
-};
+import { brl } from "@/lib/formato";
 
 /**
- * Peça central da página de vendas: um extrato de dívidas fictício com as
- * anotações que o plano faz. Os números saem do mesmo motor do produto.
+ * Peça central da página inicial: um extrato de dívidas fictício com as
+ * anotações que o diagnóstico gratuito faz. Os números saem do mesmo motor
+ * que calcula o diagnóstico de verdade.
  */
 export function ExtratoAnotado() {
   const d = diagnosticar(EXEMPLO);
+  const primeira = d.dividas[0];
+  const porCusto = [...d.dividas].sort((a, b) => b.jurosEstimadosMes - a.jurosEstimadosMes);
   const ordem = (n: number) => ({ "--ordem": n }) as CSSProperties;
 
   return (
-    <figure className="extrato" aria-label="Exemplo de plano montado pelo Fôlego">
+    <figure className="extrato" aria-label="Exemplo de diagnóstico feito pelo Fôlego">
       <div className="extrato__cabeca">
         <span className="extrato__titulo">Extrato de dívidas</span>
         <span className="pequeno apoio">Exemplo</span>
       </div>
 
-      <ol>
-        {d.dividas.map((divida, i) => (
+      <ul>
+        {porCusto.map((divida, i) => (
           <li key={divida.id} className="extrato__item">
             <div className="extrato__linha">
               <span>{divida.rotulo}</span>
@@ -38,28 +30,28 @@ export function ExtratoAnotado() {
               <span className="numero negativo">{brl(divida.saldo)}</span>
             </div>
             <span className="extrato__nota caneta" style={ordem(i)}>
-              {divida.ordem}º: {NOTA[divida.acao]}
+              {divida.id === primeira.id
+                ? "comece por esta"
+                : `${brl(divida.jurosEstimadosMes)} de juros por mês`}
             </span>
           </li>
         ))}
-      </ol>
+      </ul>
 
       <div className="extrato__total">
         <span>Total</span>
         <span className="numero negativo">{brl(d.totalDividas)}</span>
       </div>
 
-      {d.plano.meses !== null && (
-        <p className="extrato__conclusao caneta" style={ordem(d.dividas.length)}>
-          {brl(d.pagamentoPlano)} por mês nas dívidas:{" "}
-          <span className="marca-texto" style={ordem(d.dividas.length + 1)}>
-            quitadas em {duracao(d.plano.meses)}
-          </span>
-        </p>
-      )}
+      <p className="extrato__conclusao caneta" style={ordem(porCusto.length)}>
+        <span className="marca-texto" style={ordem(porCusto.length + 1)}>
+          {brl(d.jurosEstimadosMes)} por mês
+        </span>{" "}
+        só de juros
+      </p>
 
       <figcaption className="pequeno apoio" style={{ marginTop: "1.25rem" }}>
-        Caso fictício, calculado pelo mesmo sistema que monta o seu plano. O seu resultado depende
+        Caso fictício, calculado pelo mesmo sistema que faz o seu diagnóstico. O seu resultado depende
         das suas respostas.
       </figcaption>
     </figure>

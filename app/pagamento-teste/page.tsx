@@ -12,8 +12,6 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export const dynamic = "force-dynamic";
-
 /** Tela que substitui o Mercado Pago quando PAGAMENTO_MODO=teste. */
 export default async function PaginaPagamentoTeste({
   searchParams,

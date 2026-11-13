@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { diagnosticar } from "@/lib/diagnostico";
 import { EXEMPLO } from "@/lib/exemplo";
-import { narrativaPadrao } from "@/lib/narrativa-padrao";
+import { leituraGratuita, narrativaPadrao } from "@/lib/narrativa-padrao";
 import { criarReferencia, referenciaCombina, referenciaValida } from "@/lib/pedido";
 import type { Respostas } from "@/lib/tipos";
 import { sanitizarRespostas } from "@/lib/validacao";
@@ -149,6 +149,17 @@ describe("narrativaPadrao", () => {
     const r = respostas({ tipoRenda: "sem_renda", rendaMensal: 0 });
     const n = narrativaPadrao(r, diagnosticar(r));
     expect(n.leitura.join(" ")).toContain("sem renda");
+  });
+});
+
+describe("leituraGratuita", () => {
+  it("aponta o que mais pesa e a primeira dívida da fila", () => {
+    const r = respostas();
+    const d = diagnosticar(r);
+    const leitura = leituraGratuita(r, d);
+    expect(leitura.pontosCriticos.length).toBeGreaterThanOrEqual(2);
+    expect(leitura.primeiroPasso?.divida.id).toBe(d.dividas[0].id);
+    expect(leitura.primeiroPasso?.oQueFazer.length).toBeGreaterThan(20);
   });
 });
 

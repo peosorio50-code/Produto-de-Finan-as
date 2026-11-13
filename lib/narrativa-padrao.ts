@@ -112,6 +112,19 @@ function estrategia(d: DividaAnalisada, diag: Diagnostico): Narrativa["estrategi
   }
 }
 
+/**
+ * O que o diagnóstico gratuito mostra além dos números: os pontos que mais
+ * pesam e por onde começar. Sai das mesmas regras do plano, sem IA.
+ */
+export function leituraGratuita(r: Respostas, diag: Diagnostico) {
+  const n = narrativaPadrao(r, diag);
+  const primeira = diag.dividas[0];
+  return {
+    pontosCriticos: n.pontosCriticos,
+    primeiroPasso: primeira ? { divida: primeira, oQueFazer: n.estrategiaPorDivida[0].oQueFazer } : null,
+  };
+}
+
 export function narrativaPadrao(r: Respostas, diag: Diagnostico): Narrativa {
   const nome = primeiroNome(r.nome);
   const primeira = diag.dividas[0];
