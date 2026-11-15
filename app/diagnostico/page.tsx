@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Marca } from "@/components/Marca";
-import { Questionario } from "@/components/Questionario";
+import { Quiz } from "@/components/Quiz";
 
 export const metadata: Metadata = {
-  title: "Diagnóstico",
+  title: "Quiz das dívidas",
   robots: { index: false },
 };
 
@@ -14,7 +14,7 @@ export default function PaginaDiagnostico() {
         <Marca />
       </header>
       <main className="fluxo">
-        <Questionario />
+        <Quiz />
       </main>
     </>
   );

@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { telefoneValido } from "./contato";
 import { LIMITES } from "./limites";
-import type { Respostas } from "./tipos";
+import type { Contato, Origem, Respostas } from "./tipos";
 
 const reais = z.number().finite().min(0).max(LIMITES.maxValor).transform((v) => Math.round(v));
 
@@ -56,6 +57,8 @@ const esquema = z.object({
   causas: z
     .array(z.enum(["perda_renda", "saude", "cartao", "familia", "juros", "negocio", "apostas", "impulso"]))
     .max(8),
+  tentativa: z.enum(["nunca", "sem_acordo", "acordo_quebrado", "acordo_em_dia"]),
+  sentimento: z.enum(["sem_dormir", "preocupado", "evito_pensar", "no_controle"]),
   controle: z.enum(["nenhum", "as_vezes", "sempre"]),
   reserva: z.enum(["nenhuma", "menos_1_mes", "mais_1_mes"]),
   rendaExtra: z.enum(["sim", "talvez", "nao"]),
@@ -94,9 +97,49 @@ export function sanitizarRespostas(entrada: unknown): Respostas | null {
     })),
     negativado: r.negativado,
     causas: [...new Set(r.causas)].sort(),
+    tentativa: r.tentativa,
+    sentimento: r.sentimento,
     controle: r.controle,
     reserva: r.reserva,
     rendaExtra: r.rendaExtra,
     objetivo: r.objetivo,
   };
+}
+
+const esquemaContato = z.object({
+  nome: z
+    .string()
+    .max(200)
+    .transform((t) => limparTexto(t, LIMITES.maxNomeCompleto))
+    .refine((t) => t.length >= 2, "Informe seu nome"),
+  email: z
+    .string()
+    .max(200)
+    .transform((t) => t.trim().toLowerCase())
+    .pipe(z.email()),
+  telefone: z
+    .string()
+    .max(40)
+    .transform((t) => t.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, ""))
+    .refine(telefoneValido, "Telefone inválido"),
+});
+
+export function sanitizarContato(entrada: unknown): Contato | null {
+  const resultado = esquemaContato.safeParse(entrada);
+  return resultado.success ? resultado.data : null;
+}
+
+const CHAVES_ORIGEM = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "gclid", "fbclid"] as const;
+
+/** Mantém só os parâmetros de campanha conhecidos, com texto curto. */
+export function sanitizarOrigem(entrada: unknown): Origem {
+  const saida: Origem = {};
+  if (!entrada || typeof entrada !== "object") return saida;
+  for (const chave of CHAVES_ORIGEM) {
+    const valor = (entrada as Record<string, unknown>)[chave];
+    if (typeof valor === "string" && valor.trim()) {
+      saida[chave] = valor.replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 200);
+    }
+  }
+  return saida;
 }

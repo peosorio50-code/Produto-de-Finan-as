@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PlanoDocumento } from "@/components/PlanoDocumento";
-import { gravarPlano, lerPedido, lerPlano, type Pedido } from "@/lib/armazenamento";
+import { gravarPlano, lerContato, lerOrigem, lerPedido, lerPlano, type Pedido } from "@/lib/armazenamento";
 import { MARCA } from "@/lib/config";
 import type { PlanoCompleto } from "@/lib/tipos";
 
@@ -61,7 +61,13 @@ export function TelaPlano() {
       const resposta = await fetch("/api/plano", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ref: atual.ref, respostas: atual.respostas, idPagamento }),
+        body: JSON.stringify({
+          ref: atual.ref,
+          respostas: atual.respostas,
+          idPagamento,
+          contato: lerContato(),
+          origem: lerOrigem(),
+        }),
       });
       if (resposta.status === 402) {
         setEstado({ fase: "aguardando_pagamento" });
@@ -124,7 +130,7 @@ export function TelaPlano() {
           )}
         </p>
         <Link href="/diagnostico" className="botao botao--contorno">
-          Fazer um novo diagnóstico
+          Fazer o quiz de novo
         </Link>
       </div>
     );

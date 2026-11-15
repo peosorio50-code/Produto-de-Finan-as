@@ -59,85 +59,113 @@ export function CampoDinheiro({
   );
 }
 
-/** Grupo de opções em que só uma pode ser marcada. */
-export function Opcoes<T extends string>({
-  legenda,
-  ajuda,
-  valor,
-  opcoes,
-  aoMudar,
-  erro,
-}: {
-  legenda: string;
+interface PropsCartoes<T extends string> {
+  /** Pergunta visível acima dos cartões. Sem ela, use `rotuladoPor` com o id do título da tela. */
+  legenda?: string;
+  rotuladoPor?: string;
   ajuda?: string;
-  valor: T | "";
   opcoes: Record<T, string>;
-  aoMudar: (valor: T) => void;
+  /** Linha menor embaixo de cada opção. */
+  detalhes?: Partial<Record<T, string>>;
+  /** Cartões em duas colunas, para opções curtas. */
+  grade?: boolean;
   erro?: string;
-}) {
-  const nome = useId();
+}
+
+function Cabeca({ id, legenda, ajuda }: { id: string; legenda?: string; ajuda?: string }) {
+  if (!legenda) return null;
   return (
-    <fieldset className="opcoes" aria-describedby={erro ? `${nome}-erro` : undefined}>
-      <legend className="opcoes__legenda">
-        {legenda}
-        {ajuda && (
-          <span className="campo__ajuda" style={{ display: "block", fontWeight: 400 }}>
-            {ajuda}
-          </span>
-        )}
-      </legend>
-      {(Object.keys(opcoes) as T[]).map((chave) => (
-        <label key={chave} className="opcao">
-          <input type="radio" name={nome} checked={valor === chave} onChange={() => aoMudar(chave)} />
-          <span>{opcoes[chave]}</span>
-        </label>
-      ))}
-      {erro && (
-        <span className="campo__erro" id={`${nome}-erro`} role="alert">
-          {erro}
-        </span>
-      )}
-    </fieldset>
+    <div className="cartoes__legenda" id={id}>
+      {legenda}
+      {ajuda && <span className="campo__ajuda">{ajuda}</span>}
+    </div>
   );
 }
 
-/** Grupo de opções em que várias podem ser marcadas. */
-export function Multiplas<T extends string>({
-  legenda,
-  ajuda,
-  valores,
-  opcoes,
-  aoMudar,
-}: {
-  legenda: string;
-  ajuda?: string;
-  valores: T[];
-  opcoes: Record<T, string>;
-  aoMudar: (valores: T[]) => void;
-}) {
+/**
+ * Respostas de quiz em que só uma vale. Cada opção é um botão: tocar escolhe
+ * (e, se a tela quiser, já avança para a próxima pergunta).
+ */
+export function Cartoes<T extends string>({
+  valor,
+  aoEscolher,
+  ...p
+}: PropsCartoes<T> & { valor: T | ""; aoEscolher: (valor: T) => void }) {
+  const id = useId();
   return (
-    <fieldset className="opcoes">
-      <legend className="opcoes__legenda">
-        {legenda}
-        {ajuda && (
-          <span className="campo__ajuda" style={{ display: "block", fontWeight: 400 }}>
-            {ajuda}
-          </span>
-        )}
-      </legend>
-      {(Object.keys(opcoes) as T[]).map((chave) => {
-        const marcado = valores.includes(chave);
-        return (
-          <label key={chave} className="opcao">
-            <input
-              type="checkbox"
-              checked={marcado}
-              onChange={() => aoMudar(marcado ? valores.filter((v) => v !== chave) : [...valores, chave])}
-            />
-            <span>{opcoes[chave]}</span>
-          </label>
-        );
-      })}
-    </fieldset>
+    <div className="pilha-cartoes">
+      <Cabeca id={id} legenda={p.legenda} ajuda={p.ajuda} />
+      <div
+        className={p.grade ? "cartoes cartoes--grade" : "cartoes"}
+        role="group"
+        aria-labelledby={p.legenda ? id : p.rotuladoPor}
+        aria-describedby={p.erro ? `${id}-erro` : undefined}
+      >
+        {(Object.keys(p.opcoes) as T[]).map((chave) => (
+          <button
+            key={chave}
+            type="button"
+            className="cartao"
+            aria-pressed={valor === chave}
+            onClick={() => aoEscolher(chave)}
+          >
+            <span className="cartao__marca" aria-hidden="true" />
+            <span className="cartao__texto">
+              {p.opcoes[chave]}
+              {p.detalhes?.[chave] && <span className="cartao__detalhe">{p.detalhes[chave]}</span>}
+            </span>
+          </button>
+        ))}
+      </div>
+      {p.erro && (
+        <span className="campo__erro" id={`${id}-erro`} role="alert">
+          {p.erro}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Respostas de quiz em que várias podem valer ao mesmo tempo. */
+export function CartoesMultiplos<T extends string>({
+  valores,
+  aoMudar,
+  ...p
+}: PropsCartoes<T> & { valores: T[]; aoMudar: (valores: T[]) => void }) {
+  const id = useId();
+  return (
+    <div className="pilha-cartoes">
+      <Cabeca id={id} legenda={p.legenda} ajuda={p.ajuda} />
+      <div
+        className={p.grade ? "cartoes cartoes--grade" : "cartoes"}
+        role="group"
+        aria-labelledby={p.legenda ? id : p.rotuladoPor}
+        aria-describedby={p.erro ? `${id}-erro` : undefined}
+      >
+        {(Object.keys(p.opcoes) as T[]).map((chave) => {
+          const marcado = valores.includes(chave);
+          return (
+            <button
+              key={chave}
+              type="button"
+              className="cartao cartao--multiplo"
+              aria-pressed={marcado}
+              onClick={() => aoMudar(marcado ? valores.filter((v) => v !== chave) : [...valores, chave])}
+            >
+              <span className="cartao__marca" aria-hidden="true" />
+              <span className="cartao__texto">
+                {p.opcoes[chave]}
+                {p.detalhes?.[chave] && <span className="cartao__detalhe">{p.detalhes[chave]}</span>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {p.erro && (
+        <span className="campo__erro" id={`${id}-erro`} role="alert">
+          {p.erro}
+        </span>
+      )}
+    </div>
   );
 }

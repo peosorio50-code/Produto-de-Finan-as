@@ -42,6 +42,12 @@ export type Causa =
   | "apostas"
   | "impulso";
 
+/** Como a pessoa se sente com as dívidas: ajusta o tom do resultado e do plano. */
+export type Sentimento = "sem_dormir" | "preocupado" | "evito_pensar" | "no_controle";
+
+/** O que já aconteceu quando a pessoa tentou negociar. */
+export type Tentativa = "nunca" | "sem_acordo" | "acordo_quebrado" | "acordo_em_dia";
+
 export type Objetivo = "limpar_nome" | "parar_juros" | "tranquilidade" | "credito" | "guardar";
 
 export type CategoriaGasto = "moradia" | "contas" | "alimentacao" | "transporte" | "saude" | "outros";
@@ -57,11 +63,26 @@ export interface Respostas {
   dividas: Divida[];
   negativado: Negativado;
   causas: Causa[];
+  tentativa: Tentativa;
+  sentimento: Sentimento;
   controle: Controle;
   reserva: Reserva;
   rendaExtra: RendaExtra;
   objetivo: Objetivo;
 }
+
+/** Contato pedido no início do quiz. Fica fora de Respostas: não vai para a IA. */
+export interface Contato {
+  nome: string;
+  email: string;
+  /** Só dígitos, com DDD e sem o 55. Ex.: 11912345678 */
+  telefone: string;
+}
+
+/** De onde a pessoa veio (parâmetros de campanha da primeira visita). */
+export type Origem = Partial<
+  Record<"utm_source" | "utm_medium" | "utm_campaign" | "utm_content" | "utm_term" | "gclid" | "fbclid", string>
+>;
 
 /* ---------- Resultado do diagnóstico (calculado, sem IA) ---------- */
 

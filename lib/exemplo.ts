@@ -25,6 +25,8 @@ export const EXEMPLO: Respostas = {
   ],
   negativado: "sim",
   causas: ["cartao", "juros"],
+  tentativa: "sem_acordo",
+  sentimento: "preocupado",
   controle: "as_vezes",
   reserva: "nenhuma",
   rendaExtra: "talvez",

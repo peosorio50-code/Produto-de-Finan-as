@@ -4,9 +4,9 @@
  */
 export const MARCA = {
   nome: "Fôlego",
-  slogan: "Diagnóstico gratuito das suas dívidas",
+  slogan: "Quiz gratuito das suas dívidas",
   descricao:
-    "Responda a algumas perguntas e veja, de graça, quanto suas dívidas custam por mês e por onde começar a sair delas.",
+    "Responda a um quiz rápido e descubra, de graça, a situação real das suas dívidas e por onde começar a sair delas.",
   /** Preço em centavos. 2990 = R$ 29,90. */
   precoCentavos: 2990,
   /** Nome que aparece na fatura do cartão do comprador (até 13 letras, sem acento). */

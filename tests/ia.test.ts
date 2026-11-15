@@ -124,6 +124,12 @@ describe("escreverNarrativa", () => {
     const enviado = JSON.parse(corpo.messages[0].content);
     expect(enviado.dividas).toHaveLength(diag.dividas.length);
     expect(enviado.diagnostico.totalDasDividas).toBe(diag.totalDividas);
+    // O contexto do quiz chega à IA; o contato (e-mail e telefone) não.
+    expect(enviado.resultadoDoQuiz.perfil).toBe("Nome travado");
+    expect(enviado.cliente.jaTentouNegociar).toBe("Tentei, mas não chegamos a um acordo");
+    expect(enviado.cliente.comoSeSente).toBeTruthy();
+    expect(corpo.messages[0].content).not.toMatch(/@|whatsapp|telefone/i);
+    expect(corpo.system).toContain("quiz");
 
     expect(narrativa).not.toBeNull();
     expect(narrativa!.leitura[0]).toBe("Primeiro parágrafo da IA.");

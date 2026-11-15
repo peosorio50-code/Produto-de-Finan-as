@@ -1,10 +1,13 @@
 /**
  * O que fica guardado no navegador do cliente. Não há banco de dados: as
- * respostas, o pedido e o plano gerado ficam só no aparelho dele.
+ * respostas, o pedido e o plano gerado ficam só no aparelho dele. O contato e
+ * o resumo do resultado também vão para o webhook de leads (lib/leads.ts).
  */
-import type { PlanoCompleto, Respostas } from "./tipos";
+import type { Contato, Origem, PlanoCompleto, Respostas } from "./tipos";
 
-const CHAVE_RASCUNHO = "folego:rascunho";
+const CHAVE_RASCUNHO = "folego:quiz";
+const CHAVE_CONTATO = "folego:contato";
+const CHAVE_ORIGEM = "folego:origem";
 const CHAVE_RESPOSTAS = "folego:respostas";
 const CHAVE_PEDIDO = "folego:pedido";
 const CHAVE_PLANO = "folego:plano:";
@@ -34,7 +37,14 @@ function gravar(chave: string, valor: unknown): void {
   }
 }
 
-/** Questionário em andamento (formato interno do formulário). */
+export const lerContato = () => ler<Contato>(CHAVE_CONTATO);
+export const gravarContato = (c: Contato) => gravar(CHAVE_CONTATO, c);
+
+/** Parâmetros de campanha da primeira visita que trouxe algum. */
+export const lerOrigem = () => ler<Origem>(CHAVE_ORIGEM) ?? {};
+export const gravarOrigem = (o: Origem) => gravar(CHAVE_ORIGEM, o);
+
+/** Quiz em andamento (formato interno do formulário). */
 export const lerRascunho = <T>() => ler<T>(CHAVE_RASCUNHO);
 export const gravarRascunho = (rascunho: unknown) => gravar(CHAVE_RASCUNHO, rascunho);
 

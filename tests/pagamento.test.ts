@@ -61,6 +61,25 @@ describe("pagamento", () => {
     expect(corpo.auto_return).toBe("approved");
   });
 
+  it("preenche o comprador com o contato do quiz", async () => {
+    let corpo: Record<string, any> = {};
+    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+      corpo = JSON.parse(String(init.body));
+      return resposta({ init_point: "https://exemplo" });
+    });
+    await criarCheckout(REF, "https://meusite.com.br", {
+      nome: "Ana Maria Souza",
+      email: "ana@exemplo.com.br",
+      telefone: "11912345678",
+    });
+    expect(corpo.payer).toEqual({
+      name: "Ana",
+      surname: "Maria Souza",
+      email: "ana@exemplo.com.br",
+      phone: { area_code: "11", number: "912345678" },
+    });
+  });
+
   it("não pede retorno automático fora de https", async () => {
     let corpo: Record<string, unknown> = {};
     vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {

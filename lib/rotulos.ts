@@ -6,7 +6,9 @@ import type {
   Objetivo,
   RendaExtra,
   Reserva,
+  Sentimento,
   SituacaoDivida,
+  Tentativa,
   TipoRenda,
 } from "./tipos";
 
@@ -37,6 +39,20 @@ export const ROTULOS_CAUSA: Record<Causa, string> = {
   negocio: "Um negócio que não deu certo",
   apostas: "Apostas e jogos",
   impulso: "Compras por impulso",
+};
+
+export const ROTULOS_TENTATIVA: Record<Tentativa, string> = {
+  nunca: "Ainda não tentei",
+  sem_acordo: "Tentei, mas não chegamos a um acordo",
+  acordo_quebrado: "Fiz acordo, mas não consegui pagar",
+  acordo_em_dia: "Tenho acordo e estou pagando",
+};
+
+export const ROTULOS_SENTIMENTO: Record<Sentimento, string> = {
+  sem_dormir: "Perco o sono, penso nisso o tempo todo",
+  preocupado: "Fico preocupado, mas sigo levando",
+  evito_pensar: "Prefiro nem olhar as faturas",
+  no_controle: "Está pesado, mas sei o que devo",
 };
 
 export const ROTULOS_CONTROLE: Record<Controle, string> = {

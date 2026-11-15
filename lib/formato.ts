@@ -56,3 +56,15 @@ export function dataExtenso(iso: string): string {
     timeZone: "America/Sao_Paulo",
   });
 }
+
+/** "11912345678" -> "(11) 91234-5678", formatando aos poucos enquanto a pessoa digita. */
+export function mascaraTelefone(digitos: string): string {
+  const d = digitos.replace(/\D/g, "").slice(0, 11);
+  if (d.length === 0) return "";
+  if (d.length <= 2) return `(${d}`;
+  const ddd = d.slice(0, 2);
+  const resto = d.slice(2);
+  const corte = d.length === 11 ? 5 : 4;
+  if (resto.length <= corte) return `(${ddd}) ${resto}`;
+  return `(${ddd}) ${resto.slice(0, corte)}-${resto.slice(corte)}`;
+}

@@ -4,6 +4,7 @@
  * três funções exportadas.
  */
 import { MARCA, PRECO_REAIS } from "./config";
+import type { Contato } from "./tipos";
 
 const API = "https://api.mercadopago.com";
 
@@ -22,8 +23,11 @@ function cabecalhos(): HeadersInit {
   };
 }
 
-/** Devolve o endereço para onde o comprador deve ir para pagar. */
-export async function criarCheckout(ref: string, origem: string): Promise<string> {
+/**
+ * Devolve o endereço para onde o comprador deve ir para pagar. O contato do
+ * quiz, quando existe, já chega preenchido no checkout.
+ */
+export async function criarCheckout(ref: string, origem: string, comprador?: Contato): Promise<string> {
   const modo = modoPagamento();
   if (modo === "teste") return `${origem}/pagamento-teste?ref=${ref}`;
   if (modo === "indisponivel") throw new Error("Pagamento não configurado");
@@ -45,6 +49,15 @@ export async function criarCheckout(ref: string, origem: string): Promise<string
     // Boleto demora dias para compensar; o plano é entregue na hora.
     payment_methods: { excluded_payment_types: [{ id: "ticket" }], installments: 1 },
   };
+  if (comprador) {
+    const [nome, ...sobrenome] = comprador.nome.split(" ");
+    corpo.payer = {
+      name: nome,
+      ...(sobrenome.length > 0 && { surname: sobrenome.join(" ") }),
+      email: comprador.email,
+      phone: { area_code: comprador.telefone.slice(0, 2), number: comprador.telefone.slice(2) },
+    };
+  }
   // O Mercado Pago só aceita retorno automático para endereços https.
   if (origem.startsWith("https://")) corpo.auto_return = "approved";
 

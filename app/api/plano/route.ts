@@ -1,11 +1,12 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { diagnosticar } from "@/lib/diagnostico";
 import { escreverNarrativa } from "@/lib/ia";
+import { enviarLead, montarLead, resumirParaLead } from "@/lib/leads";
 import { narrativaPadrao } from "@/lib/narrativa-padrao";
 import { pagamentoAprovado } from "@/lib/pagamento";
 import { referenciaCombina } from "@/lib/pedido";
 import type { PlanoCompleto } from "@/lib/tipos";
-import { sanitizarRespostas } from "@/lib/validacao";
+import { sanitizarContato, sanitizarOrigem, sanitizarRespostas } from "@/lib/validacao";
 
 export const runtime = "nodejs";
 // A IA pode levar mais de um minuto para escrever o plano.
@@ -43,5 +44,19 @@ export async function POST(requisicao: NextRequest) {
     narrativa: daIA ?? padrao,
     origemNarrativa: daIA ? "ia" : "padrao",
   };
+
+  const contato = sanitizarContato(corpo?.contato);
+  if (contato) {
+    // Pode chegar mais de uma vez para o mesmo pedido (quem pede a versão da IA
+    // de novo): use pedido.ref para não contar a venda em dobro.
+    const lead = montarLead({
+      evento: "plano_gerado",
+      contato,
+      origem: sanitizarOrigem(corpo?.origem),
+      resultado: resumirParaLead(respostas, diagnostico),
+      pedido: { ref },
+    });
+    after(() => enviarLead(lead));
+  }
   return NextResponse.json({ plano });
 }

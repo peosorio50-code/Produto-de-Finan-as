@@ -3,6 +3,7 @@ import "@fontsource-variable/bricolage-grotesque/wdth.css";
 import "@fontsource-variable/figtree";
 import "@fontsource-variable/caveat";
 import "./globals.css";
+import { CapturaOrigem } from "@/components/CapturaOrigem";
 import { MARCA } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -22,7 +23,10 @@ export const viewport: Viewport = {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <CapturaOrigem />
+        {children}
+      </body>
     </html>
   );
 }

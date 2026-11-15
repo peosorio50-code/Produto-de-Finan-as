@@ -246,6 +246,15 @@ export function narrativaPadrao(r: Respostas, diag: Diagnostico): Narrativa {
     );
   }
   if (s.apostas) primeiros7Dias.push("Peça a autoexclusão nas plataformas de apostas que você usa.");
+  if (r.tentativa === "acordo_quebrado") {
+    primeiros7Dias.push(
+      "Antes de qualquer acordo novo, calcule a parcela pelo seu pior mês, não pelo melhor. Se o acordo antigo quebrou, peça ao credor para refazê-lo com esse valor.",
+    );
+  } else if (r.tentativa === "sem_acordo") {
+    primeiros7Dias.push(
+      "Desta vez, entre na negociação com o valor máximo que cabe no seu mês já definido, e só aceite proposta por escrito.",
+    );
+  }
   if (primeira) {
     primeiros7Dias.push(
       `Faça o primeiro contato sobre ${minusculaInicial(primeira.rotulo)}, a primeira da sua fila, usando a mensagem pronta deste plano. Peça a proposta por escrito e não feche no primeiro dia.`,

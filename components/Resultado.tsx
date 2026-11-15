@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EscalaNivel, FRASE_NIVEL, LinhasDiagnostico } from "@/components/Resumo";
-import { gravarPedido, lerPedido, lerPlano, lerRespostas } from "@/lib/armazenamento";
+import { gravarPedido, lerContato, lerOrigem, lerPedido, lerPlano, lerRespostas } from "@/lib/armazenamento";
 import { MARCA, PRECO_REAIS } from "@/lib/config";
 import { diagnosticar } from "@/lib/diagnostico";
 import { brl, brlCentavos } from "@/lib/formato";
 import { leituraGratuita } from "@/lib/narrativa-padrao";
-import { ROTULOS_ACAO } from "@/lib/rotulos";
+import { ACOLHIMENTO, itensDoPlano, perfilDaSituacao } from "@/lib/perfil";
+import { ROTULOS_ACAO, ROTULOS_CAUSA, ROTULOS_OBJETIVO, ROTULOS_SENTIMENTO, ROTULOS_TENTATIVA } from "@/lib/rotulos";
 import type { Respostas } from "@/lib/tipos";
 
 const ERROS: Record<string, string> = {
@@ -30,8 +31,8 @@ function Cadeado() {
 }
 
 /**
- * Tela do diagnóstico gratuito. Entrega o diagnóstico inteiro primeiro; o
- * plano pago só aparece no fim, depois que a pessoa já recebeu o resultado.
+ * Resultado do quiz. Entrega a situação da pessoa e o diagnóstico primeiro; o
+ * plano pago só aparece no fim, ligado ao que ela respondeu.
  * `vendaAberta` é falso enquanto o pagamento não está configurado.
  */
 export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
@@ -42,7 +43,9 @@ export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    setRespostas(lerRespostas());
+    const salvas = lerRespostas();
+    // Respostas de uma versão antiga do questionário não têm as perguntas do quiz.
+    setRespostas(salvas?.tentativa && salvas?.sentimento ? salvas : null);
     const pedido = lerPedido();
     if (pedido && lerPlano(pedido.ref)) setPlanoPronto(pedido.ref);
   }, []);
@@ -57,7 +60,7 @@ export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
       const resposta = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ respostas }),
+        body: JSON.stringify({ respostas, contato: lerContato(), origem: lerOrigem() }),
       });
       const dados = await resposta.json();
       if (!resposta.ok) throw new Error(dados.erro);
@@ -80,10 +83,10 @@ export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
   if (!respostas || !d || !leitura) {
     return (
       <div className="espera">
-        <h1 className="titulo-2">Seu diagnóstico ainda não foi feito neste aparelho</h1>
-        <p className="apoio">Responda às perguntas para ver o resultado. Leva uns 3 minutos.</p>
+        <h1 className="titulo-2">Você ainda não fez o quiz neste aparelho</h1>
+        <p className="apoio">Responda às perguntas para ver a sua situação. Leva uns 3 minutos.</p>
         <Link href="/diagnostico" className="botao">
-          Fazer meu diagnóstico gratuito
+          Fazer o quiz gratuito
         </Link>
       </div>
     );
@@ -91,14 +94,28 @@ export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
 
   const porCusto = [...d.dividas].sort((a, b) => b.jurosEstimadosMes - a.jurosEstimadosMes);
   const passo = leitura.primeiroPasso;
+  const perfil = perfilDaSituacao(d);
+  const contou: { titulo: string; texto: string }[] = [
+    { titulo: "O que você mais quer", texto: ROTULOS_OBJETIVO[respostas.objetivo] },
+    { titulo: "Negociação", texto: ROTULOS_TENTATIVA[respostas.tentativa] },
+    { titulo: "Como você se sente", texto: ROTULOS_SENTIMENTO[respostas.sentimento] },
+  ];
+  if (respostas.causas.length > 0) {
+    contou.push({ titulo: "O que mais pesou", texto: respostas.causas.map((c) => ROTULOS_CAUSA[c]).join(", ") });
+  }
 
   return (
     <>
       <header className="documento__capa">
-        <p className="apoio">Diagnóstico de {respostas.nome}</p>
-        <h1 className="titulo-2">Situação: {d.nivelRotulo.toLowerCase()}</h1>
+        <p className="apoio">Resultado do quiz de {respostas.nome}</p>
+        <p className="sobretitulo">Sua situação</p>
+        <h1 className="titulo-1">{perfil.titulo}</h1>
+        <p className="destaque">{perfil.resumo}</p>
         <EscalaNivel nivel={d.nivel} />
-        <p className="destaque">{FRASE_NIVEL[d.nivel]}</p>
+        <p>
+          <strong>Nível {d.nivel} de 4, {d.nivelRotulo.toLowerCase()}.</strong> {FRASE_NIVEL[d.nivel]}
+        </p>
+        <p className="apoio">{ACOLHIMENTO[respostas.sentimento]}</p>
       </header>
 
       {parametros.get("pagamento") === "falhou" && (
@@ -183,22 +200,22 @@ export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
       )}
 
       <section className="bloco bloco--final">
-        <h2 className="titulo-2">Quer o caminho inteiro?</h2>
+        <h2 className="titulo-2">O próximo passo: o seu plano completo</h2>
         <p className="destaque apoio">
-          Seu diagnóstico termina aqui, e é seu. Para quem quer ir além, existe o plano completo, que
-          transforma esses números em um passo a passo.
+          Seu resultado termina aqui, e é seu. Para quem quer o caminho inteiro, o plano completo é
+          escrito a partir das suas respostas, começando pelo que você contou:
         </p>
+        <dl className="contou">
+          {contou.map((item) => (
+            <div key={item.titulo}>
+              <dt>{item.titulo}</dt>
+              <dd>{item.texto}</dd>
+            </div>
+          ))}
+        </dl>
+        <p>Com isso, o plano traz:</p>
         <ul className="trancado">
-          {[
-            d.quantidadeDividas > 1
-              ? `A ordem das suas ${d.quantidadeDividas} dívidas e o que fazer com cada uma`
-              : "O que fazer com a sua dívida, do primeiro contato à quitação",
-            "A mensagem pronta para enviar a cada credor",
-            "Em quanto tempo dá para quitar tudo, e quanto destinar por mês",
-            "Onde cortar no seu orçamento, grupo por grupo",
-            "O que fazer nos primeiros 7 dias e nas 4 semanas seguintes",
-            "Um guia com método, direitos, armadilhas e ajuda gratuita",
-          ].map((item) => (
+          {itensDoPlano(respostas, d).map((item) => (
             <li key={item}>
               <Cadeado />
               <span>{item}</span>
@@ -210,8 +227,8 @@ export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
           <div className="canhoto__corpo">
             <h3 className="titulo-3">Plano completo de {respostas.nome}</h3>
             <p className="apoio">
-              Escrito por inteligência artificial com os números que você acabou de informar, mais um
-              guia que acompanha todo plano.
+              Escrito por inteligência artificial para a situação “{perfil.titulo.toLowerCase()}”, com os
+              números e as respostas que você acabou de dar, mais um guia que acompanha todo plano.
             </p>
             {vendaAberta && (
               <p className="pequeno apoio">
@@ -232,7 +249,7 @@ export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
               <>
                 <p className="titulo-3">Em breve</p>
                 <p className="pequeno apoio">
-                  O plano completo ainda não está à venda. Seu diagnóstico continua guardado neste
+                  O plano completo ainda não está à venda. Seu resultado continua guardado neste
                   aparelho.
                 </p>
               </>

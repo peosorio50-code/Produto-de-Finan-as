@@ -16,27 +16,50 @@ export default function PaginaPrivacidade() {
       <main className="documento">
         <header className="documento__capa">
           <h1 className="titulo-2">Privacidade e termos de uso</h1>
-          <p className="apoio">Em poucas palavras: pedimos o mínimo e não guardamos suas respostas.</p>
+          <p className="apoio">
+            Em poucas palavras: pedimos o mínimo, usamos seu contato só para falar com você e não
+            vendemos seus dados.
+          </p>
         </header>
 
         <section className="bloco">
           <h2 className="titulo-3">O que pedimos</h2>
           <p>
-            Um nome para chamar você e valores aproximados de renda, gastos e dívidas. Não pedimos CPF,
-            senha, número de cartão, conta bancária nem nome de banco. Se preferir, use um apelido no
-            lugar do nome.
+            No início do quiz, nome, e-mail e WhatsApp. Depois, valores aproximados de renda, gastos e
+            dívidas e algumas respostas de múltipla escolha. Não pedimos CPF, senha, número de cartão,
+            conta bancária nem nome de banco.
+          </p>
+        </section>
+
+        <section className="bloco">
+          <h2 className="titulo-3">Para que usamos seu contato</h2>
+          <p>
+            Para falar com você sobre o seu resultado e sobre o plano completo, por e-mail e WhatsApp.
+            Para não receber mais mensagens, responda a qualquer uma delas pedindo para sair
+            {MARCA.contatoEmail && (
+              <>
+                {" "}
+                ou escreva para <a href={`mailto:${MARCA.contatoEmail}`}>{MARCA.contatoEmail}</a>
+              </>
+            )}
+            . Não vendemos nem cedemos seu contato a outras empresas.
           </p>
         </section>
 
         <section className="bloco">
           <h2 className="titulo-3">Onde suas respostas ficam</h2>
           <p>
-            No seu aparelho, no armazenamento do navegador. O diagnóstico gratuito é calculado ali
-            mesmo, sem enviar suas respostas para nós. Se você decidir comprar o plano completo, as
-            respostas são enviadas ao nosso sistema e a um serviço de inteligência artificial (Claude,
-            da Anthropic) apenas para gerar o texto do plano. Não mantemos banco de dados com suas
-            respostas nem com o plano gerado, e não vendemos nem compartilhamos essas informações para
-            publicidade.
+            O resultado é calculado no seu aparelho, e as respostas completas ficam guardadas no
+            armazenamento do navegador. Quando você começa o quiz, seu nome, e-mail e WhatsApp vão para
+            a nossa ferramenta de atendimento. Quando termina, vai junto um resumo do resultado: a
+            situação, o nível, a renda, o total e os tipos de dívida e as respostas de múltipla
+            escolha, para que a conversa seja sobre o seu caso.
+          </p>
+          <p>
+            Se você comprar o plano completo, as respostas também são enviadas a um serviço de
+            inteligência artificial (Claude, da Anthropic) apenas para escrever o texto do plano. Seu
+            e-mail e seu telefone não vão para a inteligência artificial, e o plano gerado não fica
+            guardado conosco.
           </p>
           <p>
             Para apagar tudo, limpe os dados de navegação deste site nas configurações do seu
@@ -48,8 +71,9 @@ export default function PaginaPrivacidade() {
           <h2 className="titulo-3">Pagamento</h2>
           <p>
             O diagnóstico é gratuito. O plano completo é opcional e pago uma única vez, sem
-            assinatura. O pagamento é processado por uma empresa de pagamentos, que trata seus dados
-            conforme a política de privacidade dela. Não temos acesso aos dados do seu cartão.
+            assinatura. O pagamento é processado por uma empresa de pagamentos, que recebe seu nome,
+            e-mail e telefone para preencher o checkout e trata seus dados conforme a política de
+            privacidade dela. Não temos acesso aos dados do seu cartão.
           </p>
         </section>
 
@@ -86,9 +110,9 @@ export default function PaginaPrivacidade() {
         <section className="bloco bloco--final">
           <h2 className="titulo-3">Seus direitos sobre os dados</h2>
           <p>
-            Pela Lei Geral de Proteção de Dados, você pode pedir informações sobre o tratamento dos
-            seus dados ou a exclusão deles. Como não guardamos suas respostas, o que temos se resume
-            aos registros de pagamento.
+            Pela Lei Geral de Proteção de Dados, você pode pedir acesso, correção ou exclusão dos seus
+            dados. O que temos é o seu contato, o resumo do resultado do quiz e os registros de
+            pagamento.
             {MARCA.contatoEmail && (
               <>
                 {" "}

@@ -5,9 +5,8 @@ import { Rodape } from "@/components/Rodape";
 import { MARCA } from "@/lib/config";
 
 /*
- * A página inicial fala só do diagnóstico gratuito. O plano pago é
- * apresentado depois, na tela do resultado, quando a pessoa já recebeu o
- * diagnóstico.
+ * A página inicial fala só do quiz gratuito. O plano pago é apresentado
+ * depois, na tela do resultado, quando a pessoa já recebeu a sua situação.
  */
 
 const NUMEROS = [
@@ -18,7 +17,7 @@ const NUMEROS = [
 ];
 
 const LEITURA = [
-  "O nível da sua situação, de atenção a emergência",
+  "O nome da sua situação e o nível, de atenção a emergência",
   "Se as dívidas acabam no ritmo de hoje, e em quanto tempo",
   "O que mais pesa no seu caso",
   "Por onde começar",
@@ -26,14 +25,19 @@ const LEITURA = [
 
 const PERGUNTAS: { pergunta: string; resposta: string }[] = [
   {
-    pergunta: "O diagnóstico é gratuito mesmo?",
+    pergunta: "O quiz é gratuito mesmo?",
     resposta:
-      "Sim. Você responde às perguntas e vê o resultado na tela, sem cadastro, sem e-mail e sem informar cartão.",
+      "Sim. Você informa nome, e-mail e WhatsApp, responde às perguntas e vê o resultado na tela, sem pagar nada e sem informar cartão.",
   },
   {
     pergunta: "Que dados vocês pedem?",
     resposta:
-      "Valores: renda, gastos do mês e quanto você deve em cada dívida. Não pedimos CPF, senha, número de cartão nem nome de banco. O diagnóstico é calculado no seu próprio aparelho, e as respostas ficam guardadas só nele.",
+      "No início, nome, e-mail e WhatsApp. Depois, valores: renda, gastos do mês e quanto você deve em cada dívida. Não pedimos CPF, senha, número de cartão nem nome de banco.",
+  },
+  {
+    pergunta: "Por que pedem e-mail e WhatsApp?",
+    resposta:
+      "Para falar com você sobre o seu resultado e sobre o plano completo. Sem spam, e você pode pedir para sair quando quiser.",
   },
   {
     pergunta: "Como os juros são calculados?",
@@ -43,12 +47,12 @@ const PERGUNTAS: { pergunta: string; resposta: string }[] = [
   {
     pergunta: "Vocês negociam minhas dívidas por mim?",
     resposta:
-      "Não. O diagnóstico mostra onde você está e por onde começar. Quem negocia é você, pelos canais oficiais de cada credor, sem intermediário.",
+      "Não. O quiz mostra onde você está e por onde começar. Quem negocia é você, pelos canais oficiais de cada credor, sem intermediário.",
   },
   {
     pergunta: "Serve para quem está sem renda ou com o nome negativado?",
     resposta:
-      "Sim. O diagnóstico leva isso em conta e muda a recomendação de por onde começar.",
+      "Sim. O resultado leva isso em conta e muda a recomendação de por onde começar.",
   },
   {
     pergunta: "Isso é consultoria financeira?",
@@ -63,7 +67,7 @@ export default function PaginaInicial() {
       <header className="pagina topo">
         <Marca />
         <Link href="/diagnostico" className="botao botao--contorno botao--compacto topo__acao">
-          Fazer meu diagnóstico
+          Fazer o quiz
         </Link>
       </header>
 
@@ -71,17 +75,17 @@ export default function PaginaInicial() {
         <section className="pagina abertura">
           <div className="abertura__texto">
             <h1 className="titulo-1">
-              Descubra quanto suas dívidas custam por mês e por onde começar a sair delas.
+              Descubra a situação real das suas dívidas e por onde começar a sair delas.
             </h1>
             <p className="destaque coluna">
-              Responda a algumas perguntas sobre renda, gastos e o que você deve. O {MARCA.nome} faz as
-              contas e mostra seu diagnóstico na hora, de graça.
+              Responda a um quiz rápido sobre renda, gastos e o que você deve. O {MARCA.nome} faz as
+              contas e mostra na hora, de graça, como está a sua situação.
             </p>
             <div className="abertura__acao">
               <Link href="/diagnostico" className="botao">
-                Fazer meu diagnóstico gratuito
+                Fazer o quiz gratuito
               </Link>
-              <p className="pequeno apoio">Leva uns 3 minutos. Sem cadastro, sem CPF e sem cartão.</p>
+              <p className="pequeno apoio">Leva uns 3 minutos. Sem CPF e sem cartão.</p>
             </div>
           </div>
           <ExtratoAnotado />
@@ -94,9 +98,10 @@ export default function PaginaInicial() {
             </div>
             <ol className="etapas">
               <li className="etapa">
-                <h3 className="titulo-3">Você responde</h3>
+                <h3 className="titulo-3">Você responde ao quiz</h3>
                 <p className="apoio">
-                  Renda, gastos do mês e cada dívida que tem hoje. Valores aproximados já servem.
+                  Perguntas rápidas, quase todas de um toque: renda, gastos e cada dívida que você tem
+                  hoje. Valores aproximados já servem.
                 </p>
               </li>
               <li className="etapa">
@@ -106,9 +111,9 @@ export default function PaginaInicial() {
                 </p>
               </li>
               <li className="etapa">
-                <h3 className="titulo-3">Você vê o diagnóstico</h3>
+                <h3 className="titulo-3">Você vê a sua situação</h3>
                 <p className="apoio">
-                  Na mesma hora, na tela. Não precisa informar e-mail nem telefone para ver o resultado.
+                  Na mesma hora, na tela: o nome da sua situação, os seus números e por onde começar.
                 </p>
               </li>
             </ol>
@@ -118,7 +123,7 @@ export default function PaginaInicial() {
         <section className="secao" id="o-que-mostra">
           <div className="pagina">
             <div className="secao__cabeca">
-              <h2 className="titulo-2">O que o diagnóstico mostra</h2>
+              <h2 className="titulo-2">O que o resultado mostra</h2>
               <p className="destaque apoio">
                 Os números que quase ninguém tem na ponta do lápis, e o que eles querem dizer.
               </p>
@@ -163,8 +168,8 @@ export default function PaginaInicial() {
                 <h3 className="titulo-3">Não é para você se</h3>
                 <ul className="lista-marcada lista-marcada--nao">
                   <li>Procura dicas de investimento. O assunto aqui é dívida.</li>
-                  <li>As dívidas são de uma empresa. O diagnóstico é para pessoa física.</li>
-                  <li>Quer alguém que negocie no seu lugar. O diagnóstico mostra o caminho, e quem negocia é você.</li>
+                  <li>As dívidas são de uma empresa. O quiz é para pessoa física.</li>
+                  <li>Quer alguém que negocie no seu lugar. O {MARCA.nome} mostra o caminho, e quem negocia é você.</li>
                 </ul>
               </div>
             </div>
@@ -192,12 +197,12 @@ export default function PaginaInicial() {
             <div className="secao__cabeca">
               <h2 className="titulo-2">Três minutos para saber onde você está</h2>
               <p className="destaque apoio">
-                Dívida que a gente não olha parece maior do que é. Ou menor. O diagnóstico mostra o
-                tamanho certo.
+                Dívida que a gente não olha parece maior do que é. Ou menor. O quiz mostra o tamanho
+                certo.
               </p>
             </div>
             <Link href="/diagnostico" className="botao">
-              Fazer meu diagnóstico gratuito
+              Fazer o quiz gratuito
             </Link>
           </div>
         </section>

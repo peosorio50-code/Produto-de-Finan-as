@@ -6,6 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { TAXA_APOS_NEGOCIACAO } from "./diagnostico";
+import { perfilDaSituacao } from "./perfil";
 import {
   ROTULOS_ACAO,
   ROTULOS_CAUSA,
@@ -15,7 +16,9 @@ import {
   ROTULOS_RENDA,
   ROTULOS_RENDA_EXTRA,
   ROTULOS_RESERVA,
+  ROTULOS_SENTIMENTO,
   ROTULOS_SITUACAO,
+  ROTULOS_TENTATIVA,
 } from "./rotulos";
 import type { Diagnostico, Narrativa, Respostas } from "./tipos";
 
@@ -64,6 +67,9 @@ const SISTEMA = `Você escreve a parte personalizada de um plano de quitação d
 Quem lê
 Uma pessoa endividada, muitas vezes ansiosa e com vergonha, lendo no celular. Pode ter pouca familiaridade com termos financeiros. Trate por "você". Use frases curtas e palavras do dia a dia, e explique qualquer termo técnico na mesma frase em que ele aparece. Seja direto e respeitoso: sem sermão, sem julgamento sobre como a dívida surgiu, sem otimismo vazio e sem promessa de resultado.
 
+De onde a pessoa vem
+Antes de comprar, a pessoa respondeu a um quiz e viu na tela um resultado gratuito: o nome da situação dela ("resultadoDoQuiz.perfil"), uma frase de resumo, o nível, os números principais, os pontos que mais pesam e a primeira dívida a resolver. O plano é a continuação desse resultado. Na "leitura", retome o perfil pelo nome, em uma frase, e vá além dele, sem repetir o resumo. Use "comoSeSente" para calibrar o tom: quem perde o sono ou evita olhar as faturas precisa de passos menores e mais acolhimento; quem diz que sabe o que deve aceita um texto mais direto. Use "jaTentouNegociar" nas estratégias: se já tentou sem acordo, mostre o que fazer diferente desta vez; se fez acordo e não conseguiu pagar, foque em parcela que caiba no pior mês e em como pedir para refazer o acordo; se tem acordo em dia, oriente a mantê-lo e não trate aquela dívida como problema novo.
+
 O que você recebe
 Um JSON com as respostas da pessoa e o diagnóstico calculado. A fila das dívidas ("ordem") e a ação recomendada para cada uma ("acao") já foram decididas pelo sistema: escreva de acordo com elas, explicando o motivo. Significado das ações:
 - regularizar_ja: conta essencial atrasada, com risco de corte de serviço ou despejo. Vem antes de tudo.
@@ -98,13 +104,17 @@ Texto simples em português do Brasil, sem markdown, sem emojis e sem listas den
 Cada "mensagemPronta" é escrita em primeira pessoa, pronta para copiar e enviar ao credor pelo chat ou WhatsApp, com os valores da pessoa. Use colchetes só para dados que você não tem, como [seu CPF] ou [data].`;
 
 function dadosParaIA(r: Respostas, d: Diagnostico) {
+  const perfil = perfilDaSituacao(d);
   return {
+    resultadoDoQuiz: { perfil: perfil.titulo, resumo: perfil.resumo },
     cliente: {
       nome: r.nome,
       pessoasNaCasa: r.pessoasNaCasa,
       renda: ROTULOS_RENDA[r.tipoRenda],
       nomeNegativado: ROTULOS_NEGATIVADO[r.negativado],
       comoChegouAqui: r.causas.map((c) => ROTULOS_CAUSA[c]),
+      comoSeSente: ROTULOS_SENTIMENTO[r.sentimento],
+      jaTentouNegociar: ROTULOS_TENTATIVA[r.tentativa],
       controleDosGastos: ROTULOS_CONTROLE[r.controle],
       reserva: ROTULOS_RESERVA[r.reserva],
       consegueRendaExtra: ROTULOS_RENDA_EXTRA[r.rendaExtra],
