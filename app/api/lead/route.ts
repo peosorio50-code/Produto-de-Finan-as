@@ -1,13 +1,13 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { diagnosticar } from "@/lib/diagnostico";
-import { enviarLead, montarLead, resumirParaLead } from "@/lib/leads";
+import { montarLead, registrarLead, resumirParaLead } from "@/lib/leads";
 import { sanitizarContato, sanitizarOrigem, sanitizarRespostas } from "@/lib/validacao";
 
 export const runtime = "nodejs";
 
 /**
- * Recebe os eventos do quiz (início e conclusão) e repassa ao webhook de
- * leads depois de responder, para não deixar a pessoa esperando.
+ * Recebe os eventos do quiz (início e conclusão), grava no banco e repassa ao
+ * webhook de leads depois de responder, para não deixar a pessoa esperando.
  */
 export async function POST(requisicao: NextRequest) {
   const corpo = await requisicao.json().catch(() => null);
@@ -18,7 +18,7 @@ export async function POST(requisicao: NextRequest) {
   const origem = sanitizarOrigem(corpo?.origem);
 
   if (corpo?.evento === "quiz_iniciado") {
-    after(() => enviarLead(montarLead({ evento: "quiz_iniciado", contato, origem })));
+    after(() => registrarLead(montarLead({ evento: "quiz_iniciado", contato, origem })));
     return NextResponse.json({ ok: true });
   }
 
@@ -29,7 +29,7 @@ export async function POST(requisicao: NextRequest) {
     }
     // O resumo é recalculado aqui, com as mesmas regras do resultado da tela.
     const resultado = resumirParaLead(respostas, diagnosticar(respostas));
-    after(() => enviarLead(montarLead({ evento: "quiz_concluido", contato, origem, resultado })));
+    after(() => registrarLead(montarLead({ evento: "quiz_concluido", contato, origem, resultado })));
     return NextResponse.json({ ok: true });
   }
 

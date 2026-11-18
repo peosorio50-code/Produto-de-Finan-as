@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-/** Tela que substitui o Mercado Pago quando PAGAMENTO_MODO=teste. */
+/** Tela que substitui o checkout da Kiwify quando PAGAMENTO_MODO=teste. */
 export default async function PaginaPagamentoTeste({
   searchParams,
 }: {
@@ -31,7 +31,7 @@ export default async function PaginaPagamentoTeste({
           <h1 className="titulo-2">Pagamento de teste</h1>
           <p className="apoio">
             O site está em modo de teste: nada é cobrado. No site publicado, esta tela dá lugar ao
-            checkout do Mercado Pago, com Pix e cartão.
+            checkout da Kiwify, com Pix e cartão.
           </p>
         </div>
         <dl className="linhas">

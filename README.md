@@ -5,7 +5,7 @@ plano de quitação personalizado (R$ 29,90), escrito por IA a partir das
 respostas do quiz.
 
 1. **Contato primeiro.** A primeira tela pede nome, e-mail e WhatsApp. Esse
-   lead sai na hora para o seu webhook (`LEADS_WEBHOOK_URL`).
+   lead fica gravado na hora no banco da VPS (veja "Leads").
 2. **Perguntas de um toque.** Uma pergunta por tela: pessoas na casa, renda,
    gastos, quais dívidas a pessoa tem (com uma tela rápida para cada tipo),
    nome negativado, tentativas de negociação, o que pesou, como se sente com
@@ -29,56 +29,90 @@ O plano tem duas partes:
 
 ```
 /  →  /diagnostico  →  /resultado  →  checkout  →  /plano
-início   quiz (contato     situação +     Mercado      plano completo
-         + perguntas)      oferta         Pago         (tela, PDF)
+início   quiz (contato     situação +     Kiwify       plano completo
+         + perguntas)      oferta                      (tela, PDF, link por e-mail)
 ```
 
-**Venda em espera.** Enquanto não houver meio de pagamento configurado
-(`MERCADOPAGO_ACCESS_TOKEN` vazio e sem `PAGAMENTO_MODO=teste`), o resultado
-mostra a oferta do plano como "Em breve", sem preço nem botão. O diagnóstico
-gratuito funciona normalmente e não depende de nenhuma chave.
+**Onde roda:** na VPS (a mesma do Meu Santo Protetor), como o serviço
+`folego` na porta 8020, com um banco SQLite em `/opt/folego/dados/folego.db`.
+O domínio chega até ela pelo Cloudflare Tunnel. Passo a passo em
+[COMO-SUBIR.md](COMO-SUBIR.md).
 
-## Leads (webhook)
+**Venda em espera.** Enquanto `KIWIFY_CHECKOUT` estiver vazio (e sem
+`PAGAMENTO_MODO=teste`), o resultado mostra a oferta do plano como "Em breve",
+sem preço nem botão. O diagnóstico gratuito funciona normalmente.
 
-O site não tem banco de dados. Cada etapa do funil é enviada por `POST` em JSON
-para `LEADS_WEBHOOK_URL`, com `Authorization: Bearer <LEADS_WEBHOOK_TOKEN>` se
-o token estiver configurado:
+## Pagamento (Kiwify)
 
-| `evento` | Quando | O que vem junto |
-| --- | --- | --- |
-| `quiz_iniciado` | A pessoa preencheu o contato e começou | contato, origem |
-| `quiz_concluido` | Respondeu tudo e viu o resultado | + `resultado` |
-| `checkout_iniciado` | Clicou em comprar (bom para recuperar venda) | + `pedido` com o link de pagamento |
-| `plano_gerado` | Pagou e o plano foi gerado | + `pedido` |
+1. Ao clicar em comprar, o site grava um **pedido** no banco (as respostas do
+   quiz) e manda a pessoa para `https://pay.kiwify.com.br/<KIWIFY_CHECKOUT>?sck=<ref>`.
+2. A Kiwify avisa o servidor em `https://SEU-SITE/api/kiwify/<KIWIFY_WEBHOOK_SEGREDO>`.
+   O aviso só é aceito com o segredo certo no endereço e, se `KIWIFY_TOKEN`
+   estiver preenchido, com a assinatura certa.
+3. A compra é ligada ao pedido pelo `sck`; se ele não voltar, pelo pedido mais
+   recente do mesmo e-mail (7 dias). Quem pagou com outro e-mail pode informar
+   o e-mail do pagamento na tela de espera. Quem pagou antes de fazer o quiz é
+   ligado sozinho quando clica em comprar com o mesmo e-mail.
+4. Depois do pagamento, a Kiwify manda a pessoa para `/plano` (página de
+   obrigado). O plano é gerado ali, guardado no banco e fica no link
+   `/plano?ref=...`, que abre em qualquer aparelho. Com a Resend configurada,
+   esse link também vai por e-mail.
+5. Reembolso e chargeback bloqueiam o pedido.
 
-```json
-{
-  "evento": "quiz_concluido",
-  "enviadoEm": "2026-11-15T22:47:03.000Z",
-  "produto": "Fôlego",
-  "contato": { "nome": "Ana Souza", "primeiroNome": "Ana", "email": "ana@exemplo.com.br",
-               "telefone": "11912345678", "whatsapp": "5511912345678" },
-  "origem": { "utm_source": "meta", "utm_campaign": "quiz" },
-  "resultado": { "perfil": "Nome travado", "nivel": 3, "nivelRotulo": "Crítico",
-                 "rendaMensal": 3600, "totalDividas": 12770, "quantidadeDividas": 3,
-                 "tiposDeDivida": ["Cartão de crédito", "Empréstimo pessoal"],
-                 "jurosEstimadosMes": 1055, "sobraMes": 1050, "dividasEmAtraso": 1,
-                 "negativado": "Sim", "objetivo": "Limpar meu nome",
-                 "sentimento": "Perco o sono, penso nisso o tempo todo",
-                 "tentativaDeNegociacao": "Tentei, mas não chegamos a um acordo",
-                 "causas": ["Os juros viraram bola de neve"] },
-  "pedido": { "ref": "fl-…", "valor": 29.9, "linkPagamento": "https://…" }
-}
+Avisos de **outros produtos** da mesma conta Kiwify são ignorados sem gravar
+nada (o produto é reconhecido pelo nome, com `KIWIFY_PRODUTO`). **Mudar o nome
+do produto na Kiwify sem atualizar `KIWIFY_PRODUTO` faz as vendas não serem
+liberadas.**
+
+## IA e créditos
+
+- O plano é escrito pelo Claude (`claude-opus-5-5`) com as respostas do quiz:
+  o nome da situação, os números, as dívidas, como a pessoa se sente, o que já
+  tentou negociar e o objetivo. E-mail e telefone não vão para a IA.
+- Custo estimado: uns US$ 0,10 a 0,25 por plano (de R$ 0,60 a R$ 1,50), num
+  produto de R$ 29,90.
+- **Uma chamada por venda.** O plano fica guardado: abrir de novo, recarregar
+  ou abrir em outra aba não chama a IA. Se a IA falhar, a pessoa recebe a
+  versão escrita por regras na hora e pode pedir a versão da IA mais 2 vezes
+  (`MAX_GERACOES` em `lib/registros.ts`).
+- **Se o crédito acabar, ninguém fica sem plano:** sai a versão por regras. O
+  `folego-admin status` avisa quando isso aconteceu nas últimas 24 h.
+
+## Leads (banco na VPS)
+
+Cada etapa do funil é gravada no banco: uma ficha por e-mail na tabela `leads`
+(nome, WhatsApp, primeira campanha, resumo do resultado, último evento) e o
+histórico na tabela `eventos`.
+
+| `evento` | Quando |
+| --- | --- |
+| `quiz_iniciado` | A pessoa preencheu o contato e começou |
+| `quiz_concluido` | Respondeu tudo e viu o resultado (grava o resumo do resultado) |
+| `checkout_iniciado` | Clicou em comprar (bom para recuperar venda) |
+| `pix_gerado` | Kiwify: Pix ou boleto gerado e ainda não pago |
+| `compra_recusada` | Kiwify: cartão recusado |
+| `carrinho_abandonado` | Kiwify: abriu o checkout e não terminou |
+| `compra_aprovada` | Kiwify: pagamento aprovado |
+| `reembolso` | Kiwify: reembolso ou chargeback |
+| `plano_gerado` | O plano foi gerado pela primeira vez |
+
+Para ver e exportar, na VPS:
+
+```bash
+folego-admin status
 ```
 
-- A `origem` traz os `utm_*`, `gclid` e `fbclid` da visita (guardados no
-  navegador quando a pessoa chega por um link de campanha).
-- O envio é feito depois da resposta ao navegador e nunca trava o quiz nem a
-  compra. Se o webhook falhar, o erro aparece só no log do servidor.
-- `plano_gerado` pode chegar mais de uma vez para o mesmo pedido (quem pede a
-  versão da IA de novo). Use `pedido.ref` para não contar a venda em dobro.
-- E-mail e telefone **não** vão para a IA. Ela recebe só o primeiro nome, os
-  números e as respostas do quiz.
+```bash
+folego-admin leads 30 > /root/leads.csv
+```
+
+```bash
+folego-admin buscar EMAIL
+```
+
+O CSV tem dado pessoal: use, apague (`rm /root/leads.csv`) e não mande por
+chat. Se quiser uma cópia dos eventos em outra ferramenta (Make, n8n, CRM),
+preencha `LEADS_WEBHOOK_URL`: o mesmo JSON de antes continua sendo enviado.
 
 ## Rodar no computador
 
@@ -110,89 +144,76 @@ npm run typecheck
 
 ## Configuração
 
+Na VPS, em `/opt/folego/.env` (modelo comentado em `deploy/env.exemplo`).
+Depois de mudar: `systemctl restart folego`.
+
 | Variável | Para que serve |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Chave da API da Anthropic. É ela que liga o texto personalizado por IA. |
-| `ANTHROPIC_MODEL` | Opcional. Modelo usado (padrão: `claude-opus-5-5`). |
-| `MERCADOPAGO_ACCESS_TOKEN` | Access Token de produção do Mercado Pago. Com ele o site cobra de verdade. |
-| `PAGAMENTO_MODO` | `teste` simula o pagamento. Só vale quando não há token do Mercado Pago. |
-| `LEADS_WEBHOOK_URL` | Webhook que recebe os leads do quiz (ver "Leads"). Vazio = leads não são enviados. |
-| `LEADS_WEBHOOK_TOKEN` | Opcional. Vai no cabeçalho `Authorization: Bearer` do webhook. |
-| `SITE_URL` | Opcional. Endereço público do site, usado na volta do pagamento. |
-| `NEXT_PUBLIC_CONTATO_EMAIL` | E-mail de atendimento mostrado no site (garantia, rodapé, privacidade). Vazio = o site não mostra e-mail. |
+| `SITE_URL` | Endereço público do site. Obrigatório na VPS (vai nos links do plano). |
+| `CONTATO_EMAIL` | E-mail de atendimento mostrado no site. Vazio = o site não mostra e-mail. |
+| `KIWIFY_CHECKOUT` | Código do checkout do produto. Com ele a venda abre. |
+| `KIWIFY_WEBHOOK_SEGREDO` | Trecho secreto do endereço do webhook (gerado na instalação). |
+| `KIWIFY_TOKEN` | Token do webhook na Kiwify, para conferir a assinatura. Aceita vários, separados por vírgula. |
+| `KIWIFY_PRODUTO` | Trecho do nome do produto na Kiwify (padrão `folego`). |
+| `ANTHROPIC_API_KEY` | Chave da API da Anthropic. Liga o texto personalizado por IA. |
+| `ANTHROPIC_MODEL` | Opcional. Padrão: `claude-opus-5-5`. |
+| `RESEND_API_KEY`, `EMAIL_REMETENTE` | Opcionais. Mandam o link do plano por e-mail. |
+| `LEADS_WEBHOOK_URL`, `LEADS_WEBHOOK_TOKEN` | Opcionais. Cópia dos leads em outra ferramenta. |
+| `PAGAMENTO_MODO` | `teste` simula o pagamento. Só no computador, nunca na VPS. |
 
-Nome do produto, preço e dias de garantia ficam em `lib/config.ts`.
+Nome do produto, preço e dias de garantia ficam em `lib/config.ts`. O preço
+cobrado é o da Kiwify: mantenha os dois iguais.
 
-## Publicar (Vercel)
+## Publicar (VPS)
 
-1. Importe este repositório na Vercel (framework: Next.js, sem ajustes).
-2. Para o quiz funcionar, nenhuma variável é obrigatória. Para receber os
-   leads, cadastre `LEADS_WEBHOOK_URL` (e, se quiser, `LEADS_WEBHOOK_TOKEN`).
-   Cadastre `NEXT_PUBLIC_CONTATO_EMAIL` quando tiver o e-mail de atendimento.
-3. Para abrir a venda do plano, cadastre `ANTHROPIC_API_KEY` e
-   `MERCADOPAGO_ACCESS_TOKEN` em *Settings → Environment Variables*, publique
-   de novo e faça uma compra real de ponta a ponta antes de divulgar.
-   **Não** cadastre `PAGAMENTO_MODO=teste` em produção: com ele o plano fica
-   liberado sem cobrança.
+```bash
+npm run empacotar
+```
 
-A geração do plano pode levar mais de um minuto. A rota `/api/plano` pede até
-300 segundos de execução, o que exige o Fluid Compute ativado no projeto (é o
-padrão em projetos novos da Vercel).
+Gera `folego-vps.zip` (site compilado + instalador + serviço + `folego-admin`,
+sem `.env`). A instalação e as atualizações estão em [COMO-SUBIR.md](COMO-SUBIR.md).
 
 ## Antes de vender
 
-- [ ] Configurar o webhook de leads, fazer o quiz uma vez e conferir se os
-      eventos chegam na sua ferramenta.
-- [ ] Revisar o aviso de uso do contato na primeira tela do quiz
-      (`components/Quiz.tsx`) e a página de privacidade com quem cuida da LGPD.
-- [ ] Fazer uma compra real (Pix e cartão) e conferir se o plano é liberado.
-      A integração com o Mercado Pago foi escrita a partir da documentação da
-      API e testada só com respostas simuladas.
+- [ ] Fazer uma compra real (Pix e cartão) e conferir se o plano é liberado e
+      se `folego-admin buscar` mostra a compra ligada ao pedido. O formato do
+      webhook da Kiwify foi escrito a partir do que conhecemos dela e testado
+      com avisos simulados.
 - [ ] Gerar alguns planos com a chave da Anthropic e ler o texto da IA com
       atenção, em casos diferentes (sem renda, só dívidas em dia, muitas dívidas).
-- [ ] Trocar o e-mail de atendimento e revisar `app/privacidade/page.tsx`
+- [ ] Revisar o aviso de uso do contato na primeira tela do quiz
+      (`components/Quiz.tsx`) e a página de privacidade com quem cuida da LGPD
       (inclua razão social/CNPJ ou CPF de quem vende).
 - [ ] Revisar os trechos legais de `lib/guia.ts`. Foram conferidos em novembro
       de 2026 (teto do rotativo, cheque especial, portabilidade, mínimo
       existencial de R$ 600, Desenrola), mas essas regras mudam.
-- [ ] Decidir sobre reembolso: o site promete devolução em 7 dias pelo e-mail
-      de atendimento, e o estorno é feito por você no painel do Mercado Pago.
 
 ## Como funciona por dentro
 
-- **Sem banco de dados.** Respostas, pedido e plano ficam no navegador do
-  cliente (`lib/armazenamento.ts`). O servidor não guarda nada: o contato e o
-  resumo do resultado só passam por ele a caminho do webhook (`lib/leads.ts`).
+- **Banco SQLite na VPS** (`lib/db.ts`, com o SQLite que vem no Node). Leads,
+  pedidos, compras e planos. As respostas do quiz em andamento continuam no
+  navegador (`lib/armazenamento.ts`) até a pessoa clicar em comprar.
 - **Situação por regras.** O nome da situação e os itens do plano mostrados
   na oferta saem de `lib/perfil.ts`, sem IA. A IA recebe esse mesmo perfil e
   continua dali no plano pago.
-- **Pedido amarrado às respostas.** A referência enviada ao Mercado Pago
-  carrega um resumo (hash) das respostas (`lib/pedido.ts`). Um pagamento libera
-  só o plano daquelas respostas, e o servidor confere o pagamento direto na API
-  do Mercado Pago antes de gerar (`lib/pagamento.ts`).
 - **A IA não faz conta.** Totais, juros, ordem das dívidas e prazos saem de
   `lib/diagnostico.ts`. A IA recebe esses números prontos e só escreve
   (`lib/ia.ts`). Se a IA falhar ou recusar, o cliente recebe a versão escrita
-  por regras (`lib/narrativa-padrao.ts`) e pode pedir a da IA de novo.
+  por regras (`lib/narrativa-padrao.ts`).
 - **Juros estimados.** Quando o cliente não informa os juros, o cálculo usa
   taxas típicas por tipo de dívida (tabela `TIPOS_DIVIDA`). O cenário do plano
   supõe dívidas caras renegociadas para até 3,5% ao mês (`TAXA_APOS_NEGOCIACAO`).
-  Ajuste esses números se quiser estimativas mais ou menos conservadoras.
 
 ## Limitações conhecidas
 
-- O plano fica guardado só no navegador em que foi comprado. Quem trocar de
-  aparelho ou limpar os dados perde o acesso (por isso o botão de salvar em PDF).
-  Guardar os planos no servidor e enviar por e-mail é o próximo passo natural.
-- O plano é entregue na tela (e em PDF), não por e-mail. Enviar por e-mail
-  exige guardar o plano no servidor e um serviço de envio. Uma alternativa é
-  disparar o e-mail pela sua ferramenta a partir do evento `plano_gerado`.
-- Não há limite de uso nas rotas da API (inclusive `/api/lead`, que repassa ao
-  webhook tudo o que tiver contato válido). Quem pagou pode pedir a geração do
-  mesmo plano várias vezes, e cada pedido consome créditos da IA.
-- Boleto fica de fora do checkout porque leva dias para compensar.
-- Sem pixel de anúncios nem analytics (os UTMs vão só no webhook). Acrescente em `app/layout.tsx` se for
-  anunciar, e atualize a página de privacidade.
+- Sem limite de requisições em `/api/lead` e `/api/checkout`: quem quiser pode
+  encher o banco de leads falsos. Se acontecer, dá para limitar no Cloudflare
+  (regras de rate limiting no domínio).
+- Sem pixel de anúncios nem analytics (os UTMs ficam só no banco). Acrescente
+  em `app/layout.tsx` se for anunciar, e atualize a página de privacidade.
+- Sem e-mails de recuperação de venda (Pix não pago, carrinho abandonado): os
+  eventos já ficam no banco; o agente de recuperação da própria Kiwify pode
+  cuidar disso enquanto não houver um disparo próprio.
 
 ## Onde mexer
 
@@ -203,7 +224,11 @@ padrão em projetos novos da Vercel).
 | Perguntas e ordem do quiz | `components/Quiz.tsx`, `lib/rotulos.ts` |
 | Nomes das situações e itens da oferta | `lib/perfil.ts` |
 | Tela de resultado e oferta do plano | `components/Resultado.tsx` |
-| O que vai para o webhook de leads | `lib/leads.ts` |
+| Leads (banco e webhook) | `lib/leads.ts` |
+| Webhook da Kiwify | `app/api/kiwify/[segredo]/route.ts`, `lib/kiwify.ts` |
+| Pedidos, compras e limite de gerações da IA | `lib/registros.ts` |
+| E-mail com o link do plano | `lib/email.ts` |
+| Instalação na VPS e `folego-admin` | `deploy/` |
 | Regras de cálculo e taxas | `lib/diagnostico.ts` |
 | Instruções dadas à IA | `lib/ia.ts` |
 | Guia fixo | `lib/guia.ts` |

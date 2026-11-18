@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Marca } from "@/components/Marca";
 import { Rodape } from "@/components/Rodape";
 import { MARCA } from "@/lib/config";
@@ -7,7 +8,8 @@ export const metadata: Metadata = {
   title: "Privacidade e termos",
 };
 
-export default function PaginaPrivacidade() {
+export default async function PaginaPrivacidade() {
+  await connection();
   return (
     <>
       <header className="documento topo" style={{ paddingBottom: 0 }}>
@@ -49,21 +51,24 @@ export default function PaginaPrivacidade() {
         <section className="bloco">
           <h2 className="titulo-3">Onde suas respostas ficam</h2>
           <p>
-            O resultado é calculado no seu aparelho, e as respostas completas ficam guardadas no
-            armazenamento do navegador. Quando você começa o quiz, seu nome, e-mail e WhatsApp vão para
-            a nossa ferramenta de atendimento. Quando termina, vai junto um resumo do resultado: a
-            situação, o nível, a renda, o total e os tipos de dívida e as respostas de múltipla
-            escolha, para que a conversa seja sobre o seu caso.
+            O resultado é calculado no seu aparelho, e as respostas ficam guardadas no armazenamento
+            do navegador. Quando você começa o quiz, seu nome, e-mail e WhatsApp são gravados no nosso
+            servidor. Quando termina, gravamos junto um resumo do resultado: a situação, o nível, a
+            renda, o total e os tipos de dívida e as respostas de múltipla escolha, para que a
+            conversa seja sobre o seu caso.
           </p>
           <p>
-            Se você comprar o plano completo, as respostas também são enviadas a um serviço de
-            inteligência artificial (Claude, da Anthropic) apenas para escrever o texto do plano. Seu
-            e-mail e seu telefone não vão para a inteligência artificial, e o plano gerado não fica
-            guardado conosco.
+            Quando você clica para comprar o plano completo, gravamos no servidor as respostas do quiz,
+            para montar o plano depois do pagamento e para que você possa abri-lo em qualquer
+            aparelho pelo link que recebe. O plano gerado fica guardado junto. As respostas também são
+            enviadas a um serviço de inteligência artificial (Claude, da Anthropic) apenas para
+            escrever o texto do plano. Seu e-mail e seu telefone não vão para a inteligência
+            artificial.
           </p>
           <p>
-            Para apagar tudo, limpe os dados de navegação deste site nas configurações do seu
-            navegador.
+            Para apagar o que fica no seu aparelho, limpe os dados de navegação deste site nas
+            configurações do seu navegador. Para apagar o que fica no nosso servidor, peça pelo canal
+            indicado em &ldquo;Seus direitos sobre os dados&rdquo;.
           </p>
         </section>
 
@@ -71,9 +76,9 @@ export default function PaginaPrivacidade() {
           <h2 className="titulo-3">Pagamento</h2>
           <p>
             O diagnóstico é gratuito. O plano completo é opcional e pago uma única vez, sem
-            assinatura. O pagamento é processado por uma empresa de pagamentos, que recebe seu nome,
-            e-mail e telefone para preencher o checkout e trata seus dados conforme a política de
-            privacidade dela. Não temos acesso aos dados do seu cartão.
+            assinatura. O pagamento é processado pela Kiwify, que trata seus dados conforme a
+            política de privacidade dela e nos avisa quando o pagamento é aprovado, recusado ou
+            devolvido, com seu nome, e-mail e telefone. Não temos acesso aos dados do seu cartão.
           </p>
         </section>
 

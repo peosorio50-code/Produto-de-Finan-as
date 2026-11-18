@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "empacotar": "bash scripts/empacotar.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

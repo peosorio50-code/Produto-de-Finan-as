@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { MARCA } from "@/lib/config";
 
-export function Rodape() {
+export async function Rodape() {
+  // O e-mail de atendimento vem do .env do servidor, lido a cada visita.
+  await connection();
   return (
     <footer className="rodape nao-imprimir">
       <div className="pagina rodape__grade">

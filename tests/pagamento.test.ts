@@ -1,150 +1,176 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PRECO_REAIS } from "@/lib/config";
+import { createHmac } from "node:crypto";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { vi } from "vitest";
+import { fecharBanco } from "@/lib/db";
+import {
+  assinaturaConfere,
+  lerAviso,
+  linkCheckout,
+  produtoConfere,
+  segredoConfere,
+  telefoneDaKiwify,
+  urlCheckoutKiwify,
+} from "@/lib/kiwify";
 import { criarCheckout, modoPagamento, pagamentoAprovado } from "@/lib/pagamento";
-
-/**
- * A API do Mercado Pago é simulada: estes testes conferem o que o site envia
- * e como interpreta as respostas, não a API real.
- */
+import { registrarCompra, salvarPedido } from "@/lib/registros";
+import { EXEMPLO } from "@/lib/exemplo";
 
 const REF = "fl-0123456789ab-0123456789abcdef";
 
-function resposta(corpo: unknown, status = 200): Response {
-  return new Response(JSON.stringify(corpo), { status, headers: { "content-type": "application/json" } });
-}
-
-const pagamento = (mudancas: Record<string, unknown> = {}) => ({
-  status: "approved",
-  external_reference: REF,
-  transaction_amount: PRECO_REAIS,
-  currency_id: "BRL",
-  ...mudancas,
-});
-
-describe("pagamento", () => {
+describe("modo de pagamento e checkout", () => {
   beforeEach(() => {
-    vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "TOKEN-DE-TESTE");
+    vi.stubEnv("FOLEGO_DB", ":memory:");
+    vi.stubEnv("KIWIFY_CHECKOUT", "AbC123x");
     vi.stubEnv("PAGAMENTO_MODO", "");
   });
-
   afterEach(() => {
     vi.unstubAllEnvs();
-    vi.unstubAllGlobals();
+    fecharBanco();
   });
 
-  it("escolhe o modo pelo ambiente, e o token sempre vence o modo de teste", () => {
+  it("escolhe o modo pelo ambiente, e o checkout da Kiwify sempre vence o modo de teste", () => {
     vi.stubEnv("PAGAMENTO_MODO", "teste");
-    expect(modoPagamento()).toBe("mercadopago");
-    vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "");
+    expect(modoPagamento()).toBe("kiwify");
+    vi.stubEnv("KIWIFY_CHECKOUT", "");
     expect(modoPagamento()).toBe("teste");
     vi.stubEnv("PAGAMENTO_MODO", "");
     expect(modoPagamento()).toBe("indisponivel");
   });
 
-  it("cria o checkout com o valor, a referência e a volta para o plano", async () => {
-    const chamadas: { url: string; init: RequestInit }[] = [];
-    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
-      chamadas.push({ url, init });
-      return resposta({ init_point: "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=1" });
-    });
-
-    const url = await criarCheckout(REF, "https://meusite.com.br");
-
-    expect(url).toContain("mercadopago.com.br");
-    expect(chamadas[0].url).toBe("https://api.mercadopago.com/checkout/preferences");
-    expect((chamadas[0].init.headers as Record<string, string>).Authorization).toBe("Bearer TOKEN-DE-TESTE");
-    const corpo = JSON.parse(String(chamadas[0].init.body));
-    expect(corpo.external_reference).toBe(REF);
-    expect(corpo.items[0].unit_price).toBe(PRECO_REAIS);
-    expect(corpo.items[0].currency_id).toBe("BRL");
-    expect(corpo.back_urls.success).toBe(`https://meusite.com.br/plano?ref=${REF}`);
-    expect(corpo.auto_return).toBe("approved");
+  it("aceita o código do checkout ou o link inteiro", () => {
+    expect(urlCheckoutKiwify()).toBe("https://pay.kiwify.com.br/AbC123x");
+    vi.stubEnv("KIWIFY_CHECKOUT", "https://pay.kiwify.com.br/AbC123x/");
+    expect(urlCheckoutKiwify()).toBe("https://pay.kiwify.com.br/AbC123x");
+    vi.stubEnv("KIWIFY_CHECKOUT", "não é um código");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(urlCheckoutKiwify()).toBeNull();
   });
 
-  it("preenche o comprador com o contato do quiz", async () => {
-    let corpo: Record<string, any> = {};
-    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
-      corpo = JSON.parse(String(init.body));
-      return resposta({ init_point: "https://exemplo" });
-    });
-    await criarCheckout(REF, "https://meusite.com.br", {
-      nome: "Ana Maria Souza",
-      email: "ana@exemplo.com.br",
-      telefone: "11912345678",
-    });
-    expect(corpo.payer).toEqual({
-      name: "Ana",
-      surname: "Maria Souza",
-      email: "ana@exemplo.com.br",
-      phone: { area_code: "11", number: "912345678" },
-    });
+  it("manda a referência do pedido, o contato e os UTMs no link do checkout", () => {
+    const url = new URL(
+      criarCheckout(
+        REF,
+        "https://folego.com.br",
+        { nome: "Ana Souza", email: "ana@exemplo.com.br", telefone: "11912345678" },
+        { utm_source: "meta", utm_campaign: "quiz", fbclid: "abc" },
+      ),
+    );
+    expect(url.origin + url.pathname).toBe("https://pay.kiwify.com.br/AbC123x");
+    expect(url.searchParams.get("sck")).toBe(REF);
+    expect(url.searchParams.get("email")).toBe("ana@exemplo.com.br");
+    expect(url.searchParams.get("name")).toBe("Ana Souza");
+    expect(url.searchParams.get("utm_source")).toBe("meta");
+    expect(url.searchParams.get("fbclid")).toBeNull();
+    expect(linkCheckout("https://pay.kiwify.com.br/x", REF)).toBe(`https://pay.kiwify.com.br/x?sck=${REF}`);
   });
 
-  it("não pede retorno automático fora de https", async () => {
-    let corpo: Record<string, unknown> = {};
-    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
-      corpo = JSON.parse(String(init.body));
-      return resposta({ init_point: "https://exemplo" });
-    });
-    await criarCheckout(REF, "http://localhost:3000");
-    expect(corpo.auto_return).toBeUndefined();
-  });
-
-  it("falha com clareza quando o Mercado Pago recusa", async () => {
-    vi.stubGlobal("fetch", async () => resposta({ message: "invalid token" }, 401));
-    await expect(criarCheckout(REF, "https://meusite.com.br")).rejects.toThrow("401");
-  });
-
-  it("libera só com pagamento aprovado, da mesma referência e no valor cheio", async () => {
-    const casos: [Record<string, unknown>, boolean][] = [
-      [pagamento(), true],
-      [pagamento({ status: "pending" }), false],
-      [pagamento({ status: "rejected" }), false],
-      [pagamento({ external_reference: "fl-000000000000-0000000000000000" }), false],
-      [pagamento({ transaction_amount: 1 }), false],
-      [pagamento({ currency_id: "ARS" }), false],
-    ];
-    for (const [p, esperado] of casos) {
-      vi.stubGlobal("fetch", async () => resposta({ results: [p] }));
-      expect(await pagamentoAprovado(REF)).toBe(esperado);
-    }
-    vi.stubGlobal("fetch", async () => resposta({ results: [] }));
-    expect(await pagamentoAprovado(REF)).toBe(false);
-  });
-
-  it("consulta o pagamento pelo id quando ele vem na volta do checkout", async () => {
-    const urls: string[] = [];
-    vi.stubGlobal("fetch", async (url: string) => {
-      urls.push(url);
-      return resposta(pagamento());
-    });
-    expect(await pagamentoAprovado(REF, "123456789")).toBe(true);
-    expect(urls).toEqual(["https://api.mercadopago.com/v1/payments/123456789"]);
-
-    // Um id com formato estranho é ignorado, e a busca pela referência decide.
-    urls.length = 0;
-    vi.stubGlobal("fetch", async (url: string) => {
-      urls.push(url);
-      return resposta({ results: [] });
-    });
-    expect(await pagamentoAprovado(REF, "../../algo")).toBe(false);
-    expect(urls).toHaveLength(1);
-    expect(urls[0]).toContain("/v1/payments/search?external_reference=");
-  });
-
-  it("no modo de teste nada é consultado", async () => {
-    vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "");
+  it("no modo de teste, manda para a tela de pagamento simulado e libera", () => {
+    vi.stubEnv("KIWIFY_CHECKOUT", "");
     vi.stubEnv("PAGAMENTO_MODO", "teste");
-    vi.stubGlobal("fetch", async () => {
-      throw new Error("não deveria chamar a rede");
-    });
-    expect(await pagamentoAprovado(REF)).toBe(true);
-    expect(await criarCheckout(REF, "http://localhost:3000")).toBe(`http://localhost:3000/pagamento-teste?ref=${REF}`);
+    expect(criarCheckout(REF, "http://localhost:3000")).toBe(`http://localhost:3000/pagamento-teste?ref=${REF}`);
+    expect(pagamentoAprovado(REF)).toBe(true);
   });
 
-  it("sem configuração, não libera nada", async () => {
-    vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "");
-    expect(await pagamentoAprovado(REF)).toBe(false);
-    await expect(criarCheckout(REF, "https://meusite.com.br")).rejects.toThrow();
+  it("só libera o pedido com compra aprovada e não reembolsada", () => {
+    salvarPedido({ ref: REF, contato: null, respostas: EXEMPLO, origem: {}, urlPagamento: "https://x" });
+    expect(pagamentoAprovado(REF)).toBe(false);
+
+    const compra = {
+      orderId: "o-1",
+      ref: REF,
+      email: "ana@exemplo.com.br",
+      nome: "Ana",
+      metodo: "pix",
+      valorCentavos: 2990,
+      produto: "Fôlego",
+    };
+    registrarCompra({ ...compra, status: "pendente" });
+    expect(pagamentoAprovado(REF)).toBe(false);
+    registrarCompra({ ...compra, status: "pago" });
+    expect(pagamentoAprovado(REF)).toBe(true);
+    // Um aviso de "Pix gerado" atrasado não desfaz a aprovação...
+    expect(registrarCompra({ ...compra, status: "pendente" })).toEqual({ anterior: "pago", status: "pago" });
+    expect(pagamentoAprovado(REF)).toBe(true);
+    // ...mas o reembolso desfaz.
+    registrarCompra({ ...compra, status: "reembolsado" });
+    expect(pagamentoAprovado(REF)).toBe(false);
+  });
+});
+
+describe("leitura do webhook da Kiwify", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  const aviso = {
+    order_id: "abc-123",
+    order_status: "paid",
+    webhook_event_type: "order_approved",
+    payment_method: "pix",
+    Product: { product_id: "p1", product_name: "Fôlego: plano de quitação de dívidas" },
+    Customer: { full_name: "Ana Souza", first_name: "Ana", email: "ANA@Exemplo.com.br", mobile: "+5511912345678" },
+    Commissions: { charge_amount: 2990, currency: "BRL" },
+    TrackingParameters: { sck: REF, src: null, utm_source: "meta", utm_campaign: null },
+  };
+
+  it("lê o pedido solto ou embrulhado em { order }", () => {
+    for (const corpo of [aviso, { order: aviso }]) {
+      expect(lerAviso(corpo)).toMatchObject({
+        tipo: "aprovada",
+        orderId: "abc-123",
+        email: "ana@exemplo.com.br",
+        nome: "Ana Souza",
+        telefone: "11912345678",
+        ref: REF,
+        metodo: "pix",
+        valorCentavos: 2990,
+        origem: { utm_source: "meta" },
+      });
+    }
+  });
+
+  it("classifica os eventos", () => {
+    const tipo = (webhook_event_type: string, order_status: string) =>
+      lerAviso({ ...aviso, webhook_event_type, order_status })?.tipo;
+    expect(tipo("pix_created", "waiting_payment")).toBe("pendente");
+    expect(tipo("billet_created", "waiting_payment")).toBe("pendente");
+    expect(tipo("order_rejected", "refused")).toBe("recusada");
+    expect(tipo("order_refunded", "refunded")).toBe("reembolso");
+    expect(tipo("chargeback", "chargedback")).toBe("reembolso");
+    expect(tipo("subscription_renewed", "")).toBe("outro");
+    expect(
+      lerAviso({ id: "c1", email: "x@y.com", name: "X", phone: "11912345678", product_name: "Fôlego", status: "abandoned", checkout_link: "https://pay.kiwify.com.br/a" })
+        ?.tipo,
+    ).toBe("abandono");
+  });
+
+  it("ignora aviso sem e-mail e normaliza o telefone", () => {
+    expect(lerAviso({ order_id: "1", Customer: {} })).toBeNull();
+    expect(telefoneDaKiwify("+55 (11) 91234-5678")).toBe("11912345678");
+    expect(telefoneDaKiwify("1132345678")).toBe("1132345678");
+    expect(telefoneDaKiwify("123")).toBe("");
+  });
+
+  it("reconhece o produto pelo nome, sem acento e sem diferenciar maiúscula", () => {
+    expect(produtoConfere("FÔLEGO - Plano")).toBe(true);
+    expect(produtoConfere("Devocionário do Meu Santo Protetor")).toBe(false);
+    vi.stubEnv("KIWIFY_PRODUTO", "plano de quitacao|folego");
+    expect(produtoConfere("Plano de Quitação")).toBe(true);
+  });
+
+  it("confere a assinatura (HMAC-SHA1 do corpo) com qualquer um dos tokens", () => {
+    const corpo = JSON.stringify(aviso);
+    const assinatura = createHmac("sha1", "tok2").update(corpo).digest("hex");
+    expect(assinaturaConfere(corpo, assinatura, ["tok1", "tok2"])).toBe(true);
+    expect(assinaturaConfere(corpo + " ", assinatura, ["tok1", "tok2"])).toBe(false);
+    expect(assinaturaConfere(corpo, null, ["tok1"])).toBe(false);
+  });
+
+  it("exige o segredo do endereço, com pelo menos 16 caracteres", () => {
+    vi.stubEnv("KIWIFY_WEBHOOK_SEGREDO", "");
+    expect(segredoConfere("")).toBe(false);
+    vi.stubEnv("KIWIFY_WEBHOOK_SEGREDO", "curto");
+    expect(segredoConfere("curto")).toBe(false);
+    vi.stubEnv("KIWIFY_WEBHOOK_SEGREDO", "s3gr3do-bem-comprido");
+    expect(segredoConfere("s3gr3do-bem-comprido")).toBe(true);
+    expect(segredoConfere("s3gr3do-bem-comprid0")).toBe(false);
   });
 });

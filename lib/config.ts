@@ -11,8 +11,12 @@ export const MARCA = {
   precoCentavos: 2990,
   /** Nome que aparece na fatura do cartão do comprador (até 13 letras, sem acento). */
   nomeNaFatura: "FOLEGO",
-  /** Vazio enquanto não houver e-mail definido: o site esconde os links de contato. */
-  contatoEmail: process.env.NEXT_PUBLIC_CONTATO_EMAIL || "",
+  /**
+   * E-mail de atendimento (variável CONTATO_EMAIL, lida no servidor quando o
+   * site roda). Vazio enquanto não houver e-mail: o site esconde os links de
+   * contato. Nos componentes que rodam no navegador ele chega por propriedade.
+   */
+  contatoEmail: process.env.CONTATO_EMAIL || "",
   garantiaDias: 7,
 } as const;
 

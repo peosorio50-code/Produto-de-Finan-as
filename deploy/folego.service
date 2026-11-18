@@ -1,0 +1,29 @@
+[Unit]
+Description=Folego (site do quiz e webhook da Kiwify)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=folego
+Group=folego
+WorkingDirectory=/opt/folego/app
+EnvironmentFile=/opt/folego/.env
+Environment=NODE_ENV=production
+Environment=PORT=8020
+Environment=HOSTNAME=127.0.0.1
+Environment=FOLEGO_DB=/opt/folego/dados/folego.db
+ExecStart=/opt/folego/node/bin/node --disable-warning=ExperimentalWarning server.js
+Restart=always
+RestartSec=5
+# A VPS é compartilhada (bot de WhatsApp e o servidor do Meu Santo Protetor):
+# o Fôlego não pode passar disto de memória nem tomar a CPU inteira.
+MemoryMax=768M
+CPUQuota=150%
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
