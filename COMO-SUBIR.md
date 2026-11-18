@@ -17,15 +17,18 @@ ou para documento: são coladas direto no `/opt/folego/.env`, na VPS.
 
 ## 1. Domínio
 
-O Fôlego precisa de um domínio próprio (ex.: `folego.com.br`), **não** um
-subdomínio do Meu Santo Protetor nem do Mapa da Alma: as marcas ficam separadas.
+Domínio do Fôlego: **`folegofinanceiro.shop`** (separado do Meu Santo
+Protetor e do Mapa da Alma, de propósito).
 
-1. Compre o domínio e coloque-o na **mesma conta do Cloudflare** em que está o
-   túnel `mapadaalma-vps`.
+1. Coloque o domínio na **mesma conta do Cloudflare** em que está o túnel
+   `mapadaalma-vps`: no Cloudflare, **Add a domain → `folegofinanceiro.shop`**,
+   plano Free. Depois troque os nameservers no site onde o domínio foi
+   comprado pelos dois que o Cloudflare mostrar. Leva de minutos a algumas horas.
 2. No Cloudflare: **Zero Trust → Networks → Tunnels → `mapadaalma-vps` →
    Public Hostname → Add a public hostname**.
-   - Domain: o domínio do Fôlego (subdomínio vazio, ou `www` num segundo hostname)
+   - Subdomain: vazio · Domain: `folegofinanceiro.shop`
    - Service: `HTTP` e `localhost:8020`
+   - (Opcional) Um segundo hostname com subdomínio `www`, igual.
 3. Se o túnel **não** aparecer como editável no painel (ele usa um arquivo
    `config.yml` na VPS), quem configurou o túnel precisa acrescentar a regra
    no arquivo e reiniciar o `cloudflared`. Isso derruba o `api.mapadaalma.online`
@@ -56,9 +59,9 @@ webhook e termina mostrando `{"ok":true,...}`. Agora preencha a configuração:
 nano /opt/folego/.env
 ```
 
-Preencha por enquanto: `SITE_URL` (ex.: `https://folego.com.br`),
-`CONTATO_EMAIL` e `ANTHROPIC_API_KEY` (passo 4). `KIWIFY_CHECKOUT` e
-`KIWIFY_TOKEN` vêm no passo 3. Salve (Ctrl+O, Enter, Ctrl+X) e reinicie:
+Preencha por enquanto: `CONTATO_EMAIL` e `ANTHROPIC_API_KEY` (passo 4). `KIWIFY_CHECKOUT` e
+`KIWIFY_TOKEN` vêm no passo 3. O `SITE_URL` já vem preenchido com
+`https://folegofinanceiro.shop`. Salve (Ctrl+O, Enter, Ctrl+X) e reinicie:
 
 **VPS:**
 
@@ -66,7 +69,7 @@ Preencha por enquanto: `SITE_URL` (ex.: `https://folego.com.br`),
 systemctl restart folego && sleep 4 && curl -s localhost:8020/api/saude
 ```
 
-Abra o domínio no celular: o quiz tem que aparecer.
+Abra `https://folegofinanceiro.shop` no celular: o quiz tem que aparecer.
 
 ---
 
@@ -79,7 +82,7 @@ Abra o domínio no celular: o quiz tem que aparecer.
   nome. Se o nome mudar, atualize `KIWIFY_PRODUTO` no `.env`.
 - Preço **R$ 29,90**, pagamento único, Pix e cartão. Garantia de 7 dias.
 - Checkout com as cores do Fôlego: fundo `#FFFFFF`, botão `#1C41D6`.
-- **Página de obrigado** (URL externa): `https://SEU-DOMINIO/plano`.
+- **Página de obrigado** (URL externa): `https://folegofinanceiro.shop/plano`.
 - Confira o nome da loja que aparece no checkout: se for "Meu Santo Protetor",
   ele aparece também para quem compra o Fôlego.
 
@@ -149,11 +152,12 @@ regras), e o `folego-admin status` avisa.
 Sem isso, o plano aparece na página de obrigado, e o link funciona em qualquer
 aparelho, mas quem pagou o Pix depois e fechou a página não recebe o link.
 
-1. Na Resend (o plano Pro do Carlos aceita mais domínios), adicione o domínio
-   do Fôlego e configure o DNS que ela pede no Cloudflare.
+1. Na Resend (o plano Pro do Carlos aceita mais domínios), adicione
+   `folegofinanceiro.shop` e configure no Cloudflare o DNS que ela pede
+   (SPF, DKIM e, de preferência, DMARC).
 2. Crie uma chave de API e cole no `.env`:
    - `RESEND_API_KEY=` a chave
-   - `EMAIL_REMETENTE=Fôlego <plano@SEU-DOMINIO>`
+   - `EMAIL_REMETENTE=Fôlego <plano@folegofinanceiro.shop>`
 3. Reinicie o serviço. O `/api/saude` passa a mostrar `"email":true`.
 
 ---
