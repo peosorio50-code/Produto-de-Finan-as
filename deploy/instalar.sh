@@ -106,4 +106,8 @@ echo
 if [ "$primeira_vez" = 1 ]; then
   echo "Primeira instalação: agora edite $BASE/.env (nano $BASE/.env) e rode: systemctl restart folego"
 fi
-echo "Pronto. Versão anterior guardada em $BASE/app.anterior."
+if [ -d "$BASE/app.anterior" ]; then
+  echo "Pronto. Versão anterior guardada em $BASE/app.anterior."
+else
+  echo "Pronto."
+fi
