@@ -265,6 +265,10 @@ export function PlanoDocumento({ plano }: { plano: PlanoCompleto }) {
 
       <section className="bloco">
         <h2 className="titulo-2">Seu orçamento</h2>
+        <p className="pequeno apoio">
+          Estimativa: o total sai da faixa que você escolheu no quiz e a divisão por grupo segue o que
+          é comum nas casas brasileiras. Ajuste com os seus valores reais quando puder.
+        </p>
         <div className="tabela-rolagem">
           <table className="tabela">
             <thead>

@@ -27,12 +27,12 @@ const PERGUNTAS: { pergunta: string; resposta: string }[] = [
   {
     pergunta: "O quiz é gratuito mesmo?",
     resposta:
-      "Sim. Você informa nome, e-mail e WhatsApp, responde às perguntas e vê o resultado na tela, sem pagar nada e sem informar cartão.",
+      "Sim. Você responde às perguntas com toques, informa nome, e-mail e WhatsApp no fim e vê o resultado na tela, sem pagar nada e sem informar cartão.",
   },
   {
     pergunta: "Que dados vocês pedem?",
     resposta:
-      "No início, nome, e-mail e WhatsApp. Depois, valores: renda, gastos do mês e quanto você deve em cada dívida. Não pedimos CPF, senha, número de cartão nem nome de banco.",
+      "Perguntas de múltipla escolha: quais dívidas existem, quanto se deve em cada uma e quanto entra por mês, sempre em faixas, sem digitar valores. No fim, nome, e-mail e WhatsApp. Não pedimos CPF, senha, número de cartão nem nome de banco.",
   },
   {
     pergunta: "Por que pedem e-mail e WhatsApp?",
@@ -42,7 +42,7 @@ const PERGUNTAS: { pergunta: string; resposta: string }[] = [
   {
     pergunta: "Como os juros são calculados?",
     resposta:
-      "Se você souber os juros de uma dívida, usamos o seu número. Se não souber, usamos a taxa típica daquele tipo de dívida no Brasil. Por isso os valores de juros são estimativas, não o número exato do seu contrato.",
+      "Usamos a taxa típica de cada tipo de dívida no Brasil e o meio da faixa de valor que você escolheu. Por isso os valores são estimativas, não o número exato do seu contrato.",
   },
   {
     pergunta: "Vocês negociam minhas dívidas por mim?",
@@ -85,7 +85,7 @@ export default function PaginaInicial() {
               <Link href="/diagnostico" className="botao">
                 Fazer o quiz gratuito
               </Link>
-              <p className="pequeno apoio">Leva uns 3 minutos. Sem CPF e sem cartão.</p>
+              <p className="pequeno apoio">Leva uns 2 minutos, só com toques. Sem CPF e sem cartão.</p>
             </div>
           </div>
           <ExtratoAnotado />
@@ -195,7 +195,7 @@ export default function PaginaInicial() {
         <section className="secao secao--pautada">
           <div className="pagina">
             <div className="secao__cabeca">
-              <h2 className="titulo-2">Três minutos para saber onde você está</h2>
+              <h2 className="titulo-2">Dois minutos para saber onde você está</h2>
               <p className="destaque apoio">
                 Dívida que a gente não olha parece maior do que é. Ou menor. O quiz mostra o tamanho
                 certo.

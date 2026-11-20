@@ -37,6 +37,9 @@ export interface NarrativaIA {
 export function dadosParaIA(r: Respostas, d: Diagnostico) {
   const perfil = perfilDaSituacao(d);
   return {
+    // O quiz pergunta valores em faixas: todos os números abaixo são aproximados.
+    observacao:
+      "Renda, gastos, saldos e parcelas foram respondidos em faixas no quiz, então todos os valores são aproximados. Ao citar valores, use 'cerca de'. A divisão dos gastos por grupo é estimada a partir do total: não afirme quanto a pessoa gasta em cada grupo.",
     resultadoDoQuiz: { perfil: perfil.titulo, resumo: perfil.resumo },
     cliente: {
       nome: r.nome,
