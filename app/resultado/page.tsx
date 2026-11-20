@@ -1,21 +1,18 @@
 import type { Metadata } from "next";
-import { connection } from "next/server";
 import { Suspense } from "react";
 import { Marca } from "@/components/Marca";
 import { Resultado } from "@/components/Resultado";
 import { Rodape } from "@/components/Rodape";
-import { modoPagamento } from "@/lib/pagamento";
+import { PUBLICO } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Seu diagnóstico",
   robots: { index: false },
 };
 
-export default async function PaginaResultado() {
-  // A venda só aparece aberta quando há um meio de pagamento configurado,
-  // o que depende do ambiente em que o site está rodando.
-  await connection();
-  const vendaAberta = modoPagamento() !== "indisponivel";
+export default function PaginaResultado() {
+  // A venda aberta ou fechada é fixada no build (NEXT_PUBLIC_VENDA_ABERTA).
+  const vendaAberta = PUBLICO.vendaAberta;
 
   return (
     <>

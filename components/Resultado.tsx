@@ -7,6 +7,10 @@ import { EscalaNivel, FRASE_NIVEL, LinhasDiagnostico } from "@/components/Resumo
 import { gravarPedido, lerContato, lerOrigem, lerPedido, lerPlano, lerRespostas } from "@/lib/armazenamento";
 import { MARCA, PRECO_REAIS } from "@/lib/config";
 import { diagnosticar } from "@/lib/diagnostico";
+import { postar } from "@/lib/api";
+import { dadosParaIA } from "@/lib/ia-dados";
+import { resumirParaLead } from "@/lib/resumo";
+import { sanitizarRespostas } from "@/lib/validacao";
 import { brl, brlCentavos } from "@/lib/formato";
 import { leituraGratuita } from "@/lib/narrativa-padrao";
 import { ACOLHIMENTO, itensDoPlano, perfilDaSituacao } from "@/lib/perfil";
@@ -57,10 +61,16 @@ export function Resultado({ vendaAberta }: { vendaAberta: boolean }) {
     setEnviando(true);
     setErro(null);
     try {
-      const resposta = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ respostas, contato: lerContato(), origem: lerOrigem() }),
+      // O servidor guarda o pedido com as respostas e o JSON que vai para a IA quando o pagamento cair.
+      const limpas = sanitizarRespostas(respostas);
+      if (!limpas) throw new Error("respostas_invalidas");
+      const dg = diagnosticar(limpas);
+      const resposta = await postar("/checkout", {
+        respostas: limpas,
+        contato: lerContato(),
+        origem: lerOrigem(),
+        resumo: resumirParaLead(limpas, dg),
+        dadosIA: dadosParaIA(limpas, dg),
       });
       const dados = await resposta.json();
       if (!resposta.ok) throw new Error(dados.erro);

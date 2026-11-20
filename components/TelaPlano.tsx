@@ -5,7 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PlanoDocumento } from "@/components/PlanoDocumento";
 import { gravarPlano, lerPedido, lerPlano } from "@/lib/armazenamento";
-import type { PlanoCompleto } from "@/lib/tipos";
+import { postar } from "@/lib/api";
+import { diagnosticar } from "@/lib/diagnostico";
+import { conciliar, type NarrativaIA } from "@/lib/ia-dados";
+import { narrativaPadrao } from "@/lib/narrativa-padrao";
+import type { PlanoCompleto, Respostas } from "@/lib/tipos";
 
 type Estado =
   | { fase: "carregando" }
@@ -110,11 +114,12 @@ export function TelaPlano({ contatoEmail, reenvioPorEmail }: { contatoEmail: str
     if (!atual) return;
     setEstado((e) => (e.fase === "aguardando_pagamento" ? e : { fase: "gerando" }));
     try {
-      const resposta = await fetch("/api/plano", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ref: atual, regenerar }),
-      });
+      let resposta = await postar("/plano", { ref: atual, regenerar });
+      // A IA leva de 30 s a 2 min: o servidor escreve em segundo plano (202) e a tela confere de novo.
+      for (let i = 0; resposta.status === 202 && i < 60; i++) {
+        await new Promise((ok) => setTimeout(ok, 5000));
+        resposta = await postar("/plano", { ref: atual });
+      }
       const dados = await resposta.json().catch(() => ({}));
       if (resposta.status === 402) {
         if (dados.urlPagamento) urlPagamento.current = dados.urlPagamento;
@@ -126,7 +131,24 @@ export function TelaPlano({ contatoEmail, reenvioPorEmail }: { contatoEmail: str
         return;
       }
       if (!resposta.ok) throw new Error(String(resposta.status));
-      const { plano, podeRegenerar } = dados as { plano: PlanoCompleto; podeRegenerar: boolean };
+      // O servidor devolve as respostas e o texto da IA; os números e a versão
+      // padrão são montados aqui, com as mesmas regras do resultado.
+      const { respostas, ia, geradoEm, podeRegenerar } = dados as {
+        respostas: Respostas;
+        ia: NarrativaIA | null;
+        geradoEm: string;
+        podeRegenerar: boolean;
+      };
+      const diagnostico = diagnosticar(respostas);
+      const padrao = narrativaPadrao(respostas, diagnostico);
+      const plano: PlanoCompleto = {
+        ref: atual,
+        geradoEm,
+        nome: respostas.nome,
+        diagnostico,
+        narrativa: ia ? conciliar(ia, diagnostico, padrao) : padrao,
+        origemNarrativa: ia ? "ia" : "padrao",
+      };
       gravarPlano(plano);
       setEstado({ fase: "pronto", plano, podeRegenerar });
     } catch {
@@ -191,11 +213,7 @@ export function TelaPlano({ contatoEmail, reenvioPorEmail }: { contatoEmail: str
             rotulo="Já pagou? Digite o e-mail da compra e mandamos o link do plano de novo."
             botao="Receber o link por e-mail"
             enviar={async (email) => {
-              const r = await fetch("/api/reenviar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
-              });
+              const r = await postar("/reenviar", { email });
               if (!r.ok) throw new Error();
               return "Se houver uma compra com este e-mail, o link chega em alguns minutos. Confira também o spam.";
             }}
@@ -239,11 +257,7 @@ export function TelaPlano({ contatoEmail, reenvioPorEmail }: { contatoEmail: str
             rotulo="Pagou com um e-mail diferente do que usou no quiz? Digite o e-mail do pagamento."
             botao="Conferir com este e-mail"
             enviar={async (email) => {
-              const r = await fetch("/api/vincular", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ref: ref.current, email }),
-              });
+              const r = await postar("/vincular", { ref: ref.current, email });
               if (r.ok) {
                 void buscar();
                 return "Encontramos o pagamento. Abrindo seu plano.";

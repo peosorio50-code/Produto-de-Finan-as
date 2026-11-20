@@ -13,7 +13,9 @@ import {
   lerRascunho,
 } from "@/lib/armazenamento";
 import { emailPareceValido, telefoneValido } from "@/lib/contato";
-import { ROTULOS_GASTO, TIPOS_DIVIDA } from "@/lib/diagnostico";
+import { diagnosticar, ROTULOS_GASTO, TIPOS_DIVIDA } from "@/lib/diagnostico";
+import { postar } from "@/lib/api";
+import { resumirParaLead } from "@/lib/resumo";
 import { mascaraTelefone } from "@/lib/formato";
 import { LIMITES } from "@/lib/limites";
 import {
@@ -153,12 +155,9 @@ function paraRespostas(f: Formulario): Respostas {
 
 /** Avisa o servidor (e, por ele, o webhook de leads). Falha em silêncio. */
 function registrar(evento: "quiz_iniciado" | "quiz_concluido", contato: Contato, respostas?: Respostas) {
-  void fetch("/api/lead", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ evento, contato, origem: lerOrigem(), respostas }),
-    keepalive: true,
-  }).catch(() => {});
+  // O resumo é calculado aqui (as regras são as mesmas da tela) e gravado no servidor.
+  const resumo = respostas ? resumirParaLead(respostas, diagnosticar(respostas)) : undefined;
+  void postar("/lead", { evento, contato, origem: lerOrigem(), resumo }, true).catch(() => {});
 }
 
 /* ---------- Telas ---------- */

@@ -16,7 +16,7 @@ export const MARCA = {
    * site roda). Vazio enquanto não houver e-mail: o site esconde os links de
    * contato. Nos componentes que rodam no navegador ele chega por propriedade.
    */
-  contatoEmail: process.env.CONTATO_EMAIL || "",
+  contatoEmail: process.env.NEXT_PUBLIC_CONTATO_EMAIL || "",
   garantiaDias: 7,
 } as const;
 

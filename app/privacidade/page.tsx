@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { connection } from "next/server";
 import { Marca } from "@/components/Marca";
 import { Rodape } from "@/components/Rodape";
 import { MARCA } from "@/lib/config";
@@ -8,8 +7,7 @@ export const metadata: Metadata = {
   title: "Privacidade e termos",
 };
 
-export default async function PaginaPrivacidade() {
-  await connection();
+export default function PaginaPrivacidade() {
   return (
     <>
       <header className="documento topo" style={{ paddingBottom: 0 }}>
